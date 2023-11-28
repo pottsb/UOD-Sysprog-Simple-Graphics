@@ -1,7 +1,7 @@
 #include "types.h"
 #include "defs.h"
 #include "x86.h"
-
+#include "memlayout.h"
 
 int sys_setpixel(int hdc, int x, int y){
 
@@ -10,12 +10,11 @@ int sys_setpixel(int hdc, int x, int y){
         return -1; // Return an error code to indicate out-of-bounds
     }
 
-    // Calculate the memory address for the pixel in video memory
-    char* videoMemory = (char*)0xA0000;
     int offset = 320 * y + x;
 
-    // Set the pixel color at the calculated address
-    videoMemory[offset] = 0x0f;
+    static ushort *crt = (ushort*)P2V(0xA0000); 
+    crt += offset;
+    memset(crt,0,0x0f);
 
     return 0; // Return 0 to indicate success
 }
@@ -35,9 +34,9 @@ void clear320x200x256() {
 
     // Loop through all pixels and set them to black
     //for (int y = 0; y < 200; y++) {
-        //for (int x = 0; x < 320; x++) {
-            sys_setpixel(1, 0, 0);
-        //}
+        for (int x = 0; x < 320; x++) {
+            sys_setpixel(1, x, 1);
+        }
     //}
 
 	
