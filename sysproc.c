@@ -77,3 +77,39 @@ int sys_uptime(void) {
     release(&tickslock);
     return xticks;
 }
+
+
+int sys_greeting(void) {
+    cprintf("Hello again from kernal space!\n");
+    return 0;
+}
+
+
+int sys_shutdown(void) {
+
+    int n;
+
+    if (argint(0, &n) < 0) {
+        return -1;
+    }
+
+    if(n == 1){
+        cprintf("Restarting...\n");
+        unsigned char good = 0x02;
+        while (good & 0x02) {
+        good = inb(0x64);
+        }
+        outb(0x64, 0xFE);
+
+    } else{
+        cprintf("Shutdown...\n");
+        outw(0x604, 0x2000);
+    }
+
+    return 0;
+}
+
+void testfunc() {
+	
+    cprintf("testfunc called!!!!!\n");
+}

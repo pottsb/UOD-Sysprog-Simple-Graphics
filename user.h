@@ -39,3 +39,18 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+
+
+
+// stuff I added
+
+// sysproc.c
+int greeting(void);
+int shutdown(int restart);
+
+
+//graphics.c
+void testfunc();
+int setpixel(int hdc, int x, int y);
+int moveto(int hdc, int x, int y);
+int lineto(int hdc, int x, int y);

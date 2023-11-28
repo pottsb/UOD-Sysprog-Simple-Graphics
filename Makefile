@@ -197,6 +197,9 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
+	_hello\
+	_shutdown\
+	_test\
 
 fs.img: mkfs $(UPROGS)
 	./mkfs fs.img $(UPROGS)
