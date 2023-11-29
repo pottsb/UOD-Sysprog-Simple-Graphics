@@ -9,12 +9,15 @@ int sys_setpixel(int hdc, int x, int y){
     if (x < 0 || x >= 320 || y < 0 || y >= 200) {
         return -1; // Return an error code to indicate out-of-bounds
     }
+    ushort offset = 320 * y + x;
 
-    int offset = 320 * y + x;
+    //static ushort* crt = (ushort*)P2V(0xA0000); 
+    //crt[offset] = 0x0f;
+    //////////// the above code doesn't work. /////////////
 
-    static ushort *crt = (ushort*)P2V(0xA0000); 
-    crt += offset;
-    memset(crt,0,0x0f);
+    // Calculate the memory address for the pixel in video memory
+    char* videoMemory = (char*)P2V(0xA0000);
+    videoMemory[offset] = 0x0f;
 
     return 0; // Return 0 to indicate success
 }
@@ -33,11 +36,10 @@ void clear320x200x256() {
 	// This function is called from videosetmode.
 
     // Loop through all pixels and set them to black
-    //for (int y = 0; y < 200; y++) {
-        for (int x = 0; x < 320; x++) {
-            sys_setpixel(1, x, 1);
-        }
-    //}
 
-	
+    char* videoMemory = (char*)P2V(0xA0000);
+
+    for(uint i = 0; i < 64320; i++){    
+        videoMemory[i] = 0x0;
+    }
 }
