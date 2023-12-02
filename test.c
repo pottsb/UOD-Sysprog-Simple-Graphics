@@ -42,8 +42,6 @@ int main(int argc, char* argv[])
     lineto(hdc, i * 10, i * 5 + 20);
     lineto(hdc, i * 10, i * 5);
     }
-endpaint(hdc);
-
 
     endpaint(hdc);
     getch();

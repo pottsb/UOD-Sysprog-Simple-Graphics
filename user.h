@@ -68,3 +68,4 @@ int selectpen(int hdc, int index);
 int fillrect(int hdc, struct rect*);
 int beginpaint(int hwnd);
 int endpaint(int hdc);
+int redraw(int hdc);

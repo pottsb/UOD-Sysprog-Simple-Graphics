@@ -200,6 +200,7 @@ UPROGS=\
 	_hello\
 	_shutdown\
 	_test\
+	_demo\
 
 fs.img: mkfs $(UPROGS)
 	./mkfs fs.img $(UPROGS)

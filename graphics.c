@@ -12,6 +12,7 @@ struct point {
 };
 struct hdc {
     struct point mypoint;
+    struct point screen;
     int pen;
     bool locked;
     char  videobuffer[640 * 400];
@@ -36,11 +37,19 @@ int sys_setpixel(void){
         return -1;
     }
 
-    // Check if the coordinates are within the screen boundaries
-    if (x < 0 || x >= 320 || y < 0 || y >= 200) {
-        return -1; // Return an error code to indicate out-of-bounds
+    // Check the pixels are within the bounds of display mode
+    if (x < 0) {
+        x = 0;
+    } else if (x > hdcarray[hdcIndex].screen.x) {
+        x = hdcarray[hdcIndex].screen.x;
     }
-    ushort offset = 320 * y + x;
+    if (y < 0) {
+        y = 0;
+    } else if (y > hdcarray[hdcIndex].screen.y) {
+        y = hdcarray[hdcIndex].screen.y;
+    }
+    
+    ushort offset = hdcarray[hdcIndex].screen.x * y + x;
     hdcarray[hdcIndex].videobuffer[offset] = hdcarray[hdcIndex].pen;
 
     return 0; // Return 0 to indicate success
@@ -63,16 +72,16 @@ int sys_moveto(void){
         return -1;
     }
 
+    // Check the pixels are within the bounds of display mode
     if (x < 0) {
         x = 0;
-    } else if (x > 320) {
-        x = 320;
+    } else if (x > hdcarray[hdcIndex].screen.x) {
+        x = hdcarray[hdcIndex].screen.x;
     }
-
     if (y < 0) {
         y = 0;
-    } else if (y > 200) {
-        y = 200;
+    } else if (y > hdcarray[hdcIndex].screen.y) {
+        y = hdcarray[hdcIndex].screen.y;
     }
 
 
@@ -103,8 +112,16 @@ int sys_lineto(void){
         return -1;
     }
 
-    if (x2 < 0 || x2 >= 320 || y2 < 0 || y2 >= 200) {
-        return -1;
+    // Check the pixels are within the bounds of display mode
+    if (x2 < 0) {
+        x2 = 0;
+    } else if (x2 > hdcarray[hdcIndex].screen.x) {
+        x2 = hdcarray[hdcIndex].screen.x;
+    }
+    if (y2 < 0) {
+        y2 = 0;
+    } else if (y2 > hdcarray[hdcIndex].screen.y) {
+        y2 = hdcarray[hdcIndex].screen.y;
     }
 
     int y1 = hdcarray[hdcIndex].mypoint.y;
@@ -118,7 +135,7 @@ int sys_lineto(void){
     int err = dx - dy;
 
     while (1) {
-        ushort offset = 320 * y1 + x1;
+        ushort offset = hdcarray[hdcIndex].screen.x * y1 + x1;
         //char* videoMemory = (char*)P2V(0xA0000);
         hdcarray[hdcIndex].videobuffer[offset] = hdcarray[hdcIndex].pen;
 
@@ -171,6 +188,11 @@ int sys_setpencolour(void){
     int g;
     int b;
 
+    if(getcurrentvideomode() == 0x12){
+        cprintf("ERROR: Unsupported video mode!");
+        return -1;
+    }
+
     if (argint(0, &index) < 0) {
         return -1;
     }
@@ -207,8 +229,16 @@ int sys_selectpen(void){
         return -1;
     }
 
-    // Check if the coordinates are within the screen boundaries
-    if (index < 0 || index > 255) {
+    int maxindex = 0;
+    int currentvideomode = getcurrentvideomode();
+    if(currentvideomode == 0x13){
+        maxindex = 255;
+    }else if(currentvideomode == 0x12){
+        maxindex = 15;
+    }
+
+    if (index < 0 || index > maxindex) {
+        cprintf("ERROR: Pen index out of range!");
         return -1; // Return an error code to indicate out-of-bounds
     }
 
@@ -234,7 +264,7 @@ int sys_fillrect(void){
     ushort offset;
     for (int y = rect->top; y <= rect->bottom; y++) {
             for (int x = rect->left; x <= rect->right; x++) {
-                offset = 320 * y + x;
+                offset = hdcarray[hdcIndex].screen.x * y + x;
                 //cprintf("X:%d Y:%d\n", x, y);
                 hdcarray[hdcIndex].videobuffer[offset] = hdcarray[hdcIndex].pen;
             }
@@ -252,19 +282,34 @@ int sys_beginpaint(void){
         return -1;
     }
 
+    // loop through all hdcs checking for a free one
     int i;
-    for (i = 0; i < MAX_HDC; i++) {
+    for (i = 0; i < MAX_HDC; i++) { 
+        if(hdcarray[i].locked == false){
+            // lock the hdc and reset vars
+            hdcarray[i].locked = true;
+            hdcarray[i].mypoint.x = 0;
+            hdcarray[i].mypoint.y = 0;
+            hdcarray[i].pen = 15;
 
-    if(hdcarray[i].locked == false)
+            // store the screen res based on video mode when begin paint is called.
+            // this is used for bounds checking and pixel position calculations.
+            int currentvideomode = getcurrentvideomode();
+            if(currentvideomode == 0x13){
+                hdcarray[i].screen.x = 320;
+                hdcarray[i].screen.y = 200;
+            }else if(currentvideomode == 0x12){
+                hdcarray[i].screen.x = 640;
+                hdcarray[i].screen.y = 400; 
+            }else{
+                hdcarray[i].locked = false;
+                cprintf("ERROR: Unsupported video mode!");
+                return -1;
+            }
 
-    hdcarray[i].locked = true;
-    hdcarray[i].mypoint.x = 0;
-    hdcarray[i].mypoint.y = 0;
-    hdcarray[i].pen = 15;
-    memmove(hdcarray[i].videobuffer, crt, sizeof(char) * 640 * 400);
-
-    return i;
-
+            memmove(hdcarray[i].videobuffer, crt, sizeof(char) * 640 * 400);
+            return i;
+        }
     }
 
     cprintf("ERROR: No free HDC!");
@@ -279,6 +324,18 @@ int sys_endpaint(void){
     memmove(crt, hdcarray[hdc].videobuffer, sizeof(char) * 640 * 400);
     hdcarray[hdc].locked = false;
 
+
+    return 1;
+}
+
+
+int sys_redraw(void){
+    int hdc;
+
+    if (argint(0, &hdc) < 0) {
+        return -1;
+    }
+    memmove(crt, hdcarray[hdc].videobuffer, sizeof(char) * 640 * 400);
 
     return 1;
 }

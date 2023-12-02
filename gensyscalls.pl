@@ -48,7 +48,8 @@ my @syscalls = (
 				"fillrect",
 				"beginpaint",
 
-				"endpaint"
+				"endpaint",
+				"redraw"
 			   );
 
 my $i;			   

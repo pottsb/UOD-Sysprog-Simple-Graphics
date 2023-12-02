@@ -4,6 +4,8 @@
         "proc.h": "c",
         "types.h": "c",
         "defs.h": "c",
-        "user.h": "c"
+        "user.h": "c",
+        "stdlib.h": "c",
+        "time.h": "c"
     }
 }
