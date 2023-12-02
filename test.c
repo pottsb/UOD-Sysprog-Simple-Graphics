@@ -47,6 +47,11 @@ endpaint(hdc);
 
     endpaint(hdc);
     getch();
+    setvideomode(0x12);
+
+
+
+    getch();
     setvideomode(0x03);
     exit();
 }

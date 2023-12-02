@@ -60,7 +60,7 @@ int shutdown(int restart);
 
 //graphics.c
 void testfunc();
-int setpixel(int hdc, int x, int y);
+int setpixel(int hdcIndex, int x, int y);
 int moveto(int hdc, int x, int y);
 int lineto(int hdc, int x, int y);
 int setpencolour(int index, int r, int g, int b);

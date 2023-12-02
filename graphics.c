@@ -3,9 +3,8 @@
 #include "x86.h"
 #include "memlayout.h"
 
-#define MAX_HDC 32
-#define VGA_MEMORY_ADDRESS 0xA0000
-#define VGA_MEMORY_SIZE 0x10000
+#define MAX_HDC 4
+static ushort *crt = (ushort*)P2V(0xA0000);  
 
 struct point {
     int x;
@@ -15,6 +14,7 @@ struct hdc {
     struct point mypoint;
     int pen;
     bool locked;
+    char  videobuffer[640 * 400];
 };
 struct hdc hdcarray[MAX_HDC];
 
@@ -41,8 +41,7 @@ int sys_setpixel(void){
         return -1; // Return an error code to indicate out-of-bounds
     }
     ushort offset = 320 * y + x;
-    char* videoMemory = (char*)P2V(0xA0000);
-    videoMemory[offset] = hdcarray[hdcIndex].pen;
+    hdcarray[hdcIndex].videobuffer[offset] = hdcarray[hdcIndex].pen;
 
     return 0; // Return 0 to indicate success
 }
@@ -64,14 +63,12 @@ int sys_moveto(void){
         return -1;
     }
 
-    // Check if the x-coordinate is out of bounds
     if (x < 0) {
         x = 0;
     } else if (x > 320) {
         x = 320;
     }
 
-    // Check if the y-coordinate is out of bounds
     if (y < 0) {
         y = 0;
     } else if (y > 200) {
@@ -106,9 +103,8 @@ int sys_lineto(void){
         return -1;
     }
 
-    // Check if the coordinates are within the screen boundaries
     if (x2 < 0 || x2 >= 320 || y2 < 0 || y2 >= 200) {
-        return -1; // Return an error code to indicate out-of-bounds
+        return -1;
     }
 
     int y1 = hdcarray[hdcIndex].mypoint.y;
@@ -123,8 +119,8 @@ int sys_lineto(void){
 
     while (1) {
         ushort offset = 320 * y1 + x1;
-        char* videoMemory = (char*)P2V(0xA0000);
-        videoMemory[offset] = hdcarray[hdcIndex].pen;
+        //char* videoMemory = (char*)P2V(0xA0000);
+        hdcarray[hdcIndex].videobuffer[offset] = hdcarray[hdcIndex].pen;
 
         if (x1 == x2 && y1 == y2) {
             break;
@@ -149,13 +145,6 @@ int sys_lineto(void){
 }
 
 void clear320x200x256() {
-	// You need to put code to clear the video buffer here.  Initially, 
-	// you might just set each pixel to black in a nested loop, but think
-	// about faster ways to do it. 
-	//
-	// This function is called from videosetmode.
-
-    // Loop through all pixels and set them to black
 
     char* videoMemory = (char*)P2V(0xA0000);
 
@@ -164,6 +153,17 @@ void clear320x200x256() {
     }
 }
 
+void clear640x400x16(){
+
+    for(uint ii = 0; ii<=4; ii++){
+        setplane(ii);
+        char* videoMemory = (char*)getframebufferbase();
+
+        for(uint i = 0; i < 256000; i++){    
+            videoMemory[i] = 0x0;
+        }
+    }
+}
 
 int sys_setpencolour(void){
     int index;
@@ -230,13 +230,13 @@ int sys_fillrect(void){
         return -1;
     }
 
-    char* videoMemory = (char*)P2V(0xA0000);
+    //char* videoMemory = (char*)P2V(0xA0000);
     ushort offset;
     for (int y = rect->top; y <= rect->bottom; y++) {
             for (int x = rect->left; x <= rect->right; x++) {
                 offset = 320 * y + x;
                 //cprintf("X:%d Y:%d\n", x, y);
-                videoMemory[offset] = hdcarray[hdcIndex].pen;
+                hdcarray[hdcIndex].videobuffer[offset] = hdcarray[hdcIndex].pen;
             }
         }
 
@@ -261,6 +261,7 @@ int sys_beginpaint(void){
     hdcarray[i].mypoint.x = 0;
     hdcarray[i].mypoint.y = 0;
     hdcarray[i].pen = 15;
+    memmove(hdcarray[i].videobuffer, crt, sizeof(char) * 640 * 400);
 
     return i;
 
@@ -275,7 +276,7 @@ int sys_endpaint(void){
     if (argint(0, &hdc) < 0) {
         return -1;
     }
-
+    memmove(crt, hdcarray[hdc].videobuffer, sizeof(char) * 640 * 400);
     hdcarray[hdc].locked = false;
 
 

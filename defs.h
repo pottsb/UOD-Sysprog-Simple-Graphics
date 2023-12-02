@@ -10,8 +10,6 @@ struct sleeplock;
 struct stat;
 struct superblock;
 struct point;
-struct rect;
-
 struct rect {
 int top; // y co-ordinate of top of rectangle
 int left; // x co-ordinate of left of rectangle
@@ -69,6 +67,7 @@ int             writei(struct inode*, char*, uint, uint);
 
 // graphics.c 
 void            clear320x200x256();
+void            clear640x400x16();
 
 // ide.c
 void            ideinit(void);
@@ -188,7 +187,6 @@ void            uartintr(void);
 void            uartputc(int);
 
 // vga.c
-
 int				videosetmode(uchar mode);
 uchar			getcurrentvideomode();
 void			setplane(uchar plane);

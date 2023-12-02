@@ -39,6 +39,7 @@ my @syscalls = (
 				"setvideomode",
 				"greeting",
 				"shutdown",
+
 				"setpixel",
 				"moveto",
 				"lineto",
@@ -46,6 +47,7 @@ my @syscalls = (
 				"setpencolour",
 				"fillrect",
 				"beginpaint",
+
 				"endpaint"
 			   );
 
