@@ -425,7 +425,7 @@ void setplane(uchar plane) {
 // Returns a pointer to the virtual address (NOT the physical address) associated with
 // the current video plane.
 
-uchar* getframebufferBase()
+uchar* getframebufferbase()
 {
 	uchar* base;
 	uchar plane;

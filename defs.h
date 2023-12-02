@@ -190,7 +190,7 @@ void            uartputc(int);
 int				videosetmode(uchar mode);
 uchar			getcurrentvideomode();
 void			setplane(uchar plane);
-uchar *			getframebufferbase();
+uchar*			getframebufferbase();
 
 // vm.c
 void            seginit(void);

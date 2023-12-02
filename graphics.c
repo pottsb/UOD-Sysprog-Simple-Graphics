@@ -155,12 +155,12 @@ void clear320x200x256() {
 
 void clear640x400x16(){
 
-    for(uint ii = 0; ii<=4; ii++){
-        setplane(ii);
+    for(uint i = 0; i<=4; i++){
+        setplane(i);
         char* videoMemory = (char*)getframebufferbase();
 
-        for(uint i = 0; i < 256000; i++){    
-            videoMemory[i] = 0x0;
+        for(uint j = 0; j < 64320; j++){    // char is 4 bits 4 * 64320 = all the pixels
+            videoMemory[j] = 0x0;
         }
     }
 }
