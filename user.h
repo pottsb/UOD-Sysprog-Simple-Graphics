@@ -1,5 +1,14 @@
 struct stat;
 struct rtcdate;
+struct rect;
+
+struct rect {
+int top; // y co-ordinate of top of rectangle
+int left; // x co-ordinate of left of rectangle
+int bottom; // y co-ordinate of bottom of rectangle
+int right; // x co-ordinate of right of rectangle
+};
+
 
 // system calls
 int fork(void);
@@ -54,3 +63,8 @@ void testfunc();
 int setpixel(int hdc, int x, int y);
 int moveto(int hdc, int x, int y);
 int lineto(int hdc, int x, int y);
+int setpencolour(int index, int r, int g, int b);
+int selectpen(int hdc, int index);
+int fillrect(int hdc, struct rect*);
+int beginpaint(int hwnd);
+int endpaint(int hdc);

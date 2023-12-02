@@ -8,7 +8,9 @@ struct point {
     int x;
     int y;
 };
-struct point mypoint= { .x = 1, .y = 0 };
+struct point mypoint = { .x = 1, .y = 0 };
+int pen = 15;
+
 
 
 int sys_setpixel(void){
@@ -34,9 +36,8 @@ int sys_setpixel(void){
         return -1; // Return an error code to indicate out-of-bounds
     }
     ushort offset = 320 * y + x;
-
     char* videoMemory = (char*)P2V(0xA0000);
-    videoMemory[offset] = 0x0f;
+    videoMemory[offset] = pen;
 
     return 0; // Return 0 to indicate success
 }
@@ -118,7 +119,7 @@ int sys_lineto(void){
     while (1) {
         ushort offset = 320 * y1 + x1;
         char* videoMemory = (char*)P2V(0xA0000);
-        videoMemory[offset] = 0x0f;
+        videoMemory[offset] = pen;
 
         if (x1 == x2 && y1 == y2) {
             break;
@@ -156,4 +157,110 @@ void clear320x200x256() {
     for(uint i = 0; i < 64320; i++){    
         videoMemory[i] = 0x0;
     }
+}
+
+
+int sys_setpencolour(void){
+    int index;
+    int r;
+    int g;
+    int b;
+
+    if (argint(0, &index) < 0) {
+        return -1;
+    }
+
+    if (argint(1, &r) < 0) {
+        return -1;
+    }
+
+    if (argint(2, &g) < 0) {
+        return -1;
+    }
+
+    if (argint(3, &b) < 0) {
+        return -1;
+    }
+
+
+    outb(0x3C8, index);
+    outb(0x3C9,r);
+    outb(0x3C9,g);
+    outb(0x3C9,b);
+    return 1;
+
+}
+int sys_selectpen(void){
+    int hdc;
+    int index;
+
+    if (argint(0, &hdc) < 0) {
+        return -1;
+    }
+
+    if (argint(1, &index) < 0) {
+        return -1;
+    }
+
+    // Check if the coordinates are within the screen boundaries
+    if (index < 0 || index > 255) {
+        return -1; // Return an error code to indicate out-of-bounds
+    }
+
+    pen = index;
+    return 1;
+
+}
+
+
+int sys_fillrect(void){
+    int hdc;
+    struct rect *rect;
+
+    if (argint(0, &hdc) < 0) {
+        return -1;
+    }
+
+    if (argptr(1, (char**)&rect,16) < 0) {
+        return -1;
+    }
+
+    char* videoMemory = (char*)P2V(0xA0000);
+    ushort offset;
+    for (int y = rect->top; y <= rect->bottom; y++) {
+            for (int x = rect->left; x <= rect->right; x++) {
+                offset = 320 * y + x;
+                //cprintf("X:%d Y:%d\n", x, y);
+                videoMemory[offset] = pen;
+            }
+        }
+
+    return 1;
+}
+
+
+
+int beginpaint(int hwnd){
+    int hwnd;
+
+    if (argint(0, &hwnd) < 0) {
+        return -1;
+    }
+
+
+
+
+    return 1;
+}
+int endpaint(int hdc){
+    int hdc;
+
+    if (argint(0, &hdc) < 0) {
+        return -1;
+    }
+
+
+
+
+    return 1;
 }
