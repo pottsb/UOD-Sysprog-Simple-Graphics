@@ -3,23 +3,28 @@
 #include "x86.h"
 #include "memlayout.h"
 
+#define MAX_HDC 32
+#define VGA_MEMORY_ADDRESS 0xA0000
+#define VGA_MEMORY_SIZE 0x10000
 
 struct point {
     int x;
     int y;
 };
-struct point mypoint = { .x = 1, .y = 0 };
-int pen = 15;
-
-
+struct hdc {
+    struct point mypoint;
+    int pen;
+    bool locked;
+};
+struct hdc hdcarray[MAX_HDC];
 
 int sys_setpixel(void){
 
-    int hdc;
+    int hdcIndex;
     int x;
     int y;
 
-    if (argint(0, &hdc) < 0) {
+    if (argint(0, &hdcIndex) < 0) {
         return -1;
     }
 
@@ -37,17 +42,17 @@ int sys_setpixel(void){
     }
     ushort offset = 320 * y + x;
     char* videoMemory = (char*)P2V(0xA0000);
-    videoMemory[offset] = pen;
+    videoMemory[offset] = hdcarray[hdcIndex].pen;
 
     return 0; // Return 0 to indicate success
 }
 int sys_moveto(void){
 
-    int hdc;
+    int hdcIndex;
     int x;
     int y;
 
-    if (argint(0, &hdc) < 0) {
+    if (argint(0, &hdcIndex) < 0) {
         return -1;
     }
 
@@ -74,8 +79,8 @@ int sys_moveto(void){
     }
 
 
-	mypoint.x = x;
-    mypoint.y = y;
+    hdcarray[hdcIndex].mypoint.x = x;
+    hdcarray[hdcIndex].mypoint.y = y;
 
     return 1;
 }
@@ -85,11 +90,11 @@ int abs(int n) {
 }
 
 int sys_lineto(void){
-	int hdc;
+	int hdcIndex;
     int x2;
     int y2;
 
-    if (argint(0, &hdc) < 0) {
+    if (argint(0, &hdcIndex) < 0) {
         return -1;
     }
 
@@ -106,8 +111,8 @@ int sys_lineto(void){
         return -1; // Return an error code to indicate out-of-bounds
     }
 
-    int y1 = mypoint.y;
-    int x1 = mypoint.x;
+    int y1 = hdcarray[hdcIndex].mypoint.y;
+    int x1 = hdcarray[hdcIndex].mypoint.x;
 
 
     int dx = abs(x2 - x1);
@@ -119,7 +124,7 @@ int sys_lineto(void){
     while (1) {
         ushort offset = 320 * y1 + x1;
         char* videoMemory = (char*)P2V(0xA0000);
-        videoMemory[offset] = pen;
+        videoMemory[offset] = hdcarray[hdcIndex].pen;
 
         if (x1 == x2 && y1 == y2) {
             break;
@@ -136,8 +141,8 @@ int sys_lineto(void){
         }
     }
 
-    mypoint.x = x2;
-    mypoint.y = y2;
+    hdcarray[hdcIndex].mypoint.x = x2;
+    hdcarray[hdcIndex].mypoint.y = y2;
 
     return 1;
 
@@ -191,10 +196,10 @@ int sys_setpencolour(void){
 
 }
 int sys_selectpen(void){
-    int hdc;
+    int hdcIndex;
     int index;
 
-    if (argint(0, &hdc) < 0) {
+    if (argint(0, &hdcIndex) < 0) {
         return -1;
     }
 
@@ -207,17 +212,17 @@ int sys_selectpen(void){
         return -1; // Return an error code to indicate out-of-bounds
     }
 
-    pen = index;
+    hdcarray[hdcIndex].pen = index;
     return 1;
 
 }
 
 
 int sys_fillrect(void){
-    int hdc;
+    int hdcIndex;
     struct rect *rect;
 
-    if (argint(0, &hdc) < 0) {
+    if (argint(0, &hdcIndex) < 0) {
         return -1;
     }
 
@@ -231,7 +236,7 @@ int sys_fillrect(void){
             for (int x = rect->left; x <= rect->right; x++) {
                 offset = 320 * y + x;
                 //cprintf("X:%d Y:%d\n", x, y);
-                videoMemory[offset] = pen;
+                videoMemory[offset] = hdcarray[hdcIndex].pen;
             }
         }
 
@@ -240,26 +245,38 @@ int sys_fillrect(void){
 
 
 
-int beginpaint(int hwnd){
+int sys_beginpaint(void){
     int hwnd;
 
     if (argint(0, &hwnd) < 0) {
         return -1;
     }
 
+    int i;
+    for (i = 0; i < MAX_HDC; i++) {
 
+    if(hdcarray[i].locked == false)
 
+    hdcarray[i].locked = true;
+    hdcarray[i].mypoint.x = 0;
+    hdcarray[i].mypoint.y = 0;
+    hdcarray[i].pen = 15;
 
-    return 1;
+    return i;
+
+    }
+
+    cprintf("ERROR: No free HDC!");
+    return -1;
 }
-int endpaint(int hdc){
+int sys_endpaint(void){
     int hdc;
 
     if (argint(0, &hdc) < 0) {
         return -1;
     }
 
-
+    hdcarray[hdc].locked = false;
 
 
     return 1;
