@@ -4,7 +4,8 @@
 #include "memlayout.h"
 
 #define MAX_HDC 4
-static ushort *crt = (ushort*)P2V(0xA0000);  
+
+static ushort *plane1 = (ushort*)P2V(0xA0000);
 
 struct point {
     int x;
@@ -13,11 +14,32 @@ struct point {
 struct hdc {
     struct point mypoint;
     struct point screen;
-    int pen;
+    short pen;
     bool locked;
-    char  videobuffer[640 * 400];
+    char  videobuffer[4][320 * 200];
 };
 struct hdc hdcarray[MAX_HDC];
+
+
+void setpixelinbuffer(int hdcIndex, int x, int y) {
+    int currentvideomode = getcurrentvideomode();
+    ushort offset = hdcarray[hdcIndex].screen.x * y + x;
+    if (currentvideomode == 0x13) {
+        hdcarray[hdcIndex].videobuffer[0][offset] = hdcarray[hdcIndex].pen;
+    } else if (currentvideomode == 0x12) {
+        ushort byteOffset = (hdcarray[hdcIndex].screen.x * y + x) / 8;
+        ushort bitPosition = x % 8;
+
+        for (short i = 0; i < 4; i++) {
+            short color_bit = (hdcarray[hdcIndex].pen >> i) & 1; // Isolate the bit for the current plane
+            if (color_bit) {
+                hdcarray[hdcIndex].videobuffer[i][byteOffset] |= (1 << (7 - bitPosition)); // Set the bit at the correct position
+            } else {
+                hdcarray[hdcIndex].videobuffer[i][byteOffset] &= ~(1 << (7 - bitPosition)); // Clear the bit
+            }
+        }
+    }
+}
 
 int sys_setpixel(void){
 
@@ -49,9 +71,7 @@ int sys_setpixel(void){
         y = hdcarray[hdcIndex].screen.y;
     }
     
-    ushort offset = hdcarray[hdcIndex].screen.x * y + x;
-    hdcarray[hdcIndex].videobuffer[offset] = hdcarray[hdcIndex].pen;
-
+    setpixelinbuffer(hdcIndex,x,y);
     return 0; // Return 0 to indicate success
 }
 int sys_moveto(void){
@@ -135,9 +155,7 @@ int sys_lineto(void){
     int err = dx - dy;
 
     while (1) {
-        ushort offset = hdcarray[hdcIndex].screen.x * y1 + x1;
-        //char* videoMemory = (char*)P2V(0xA0000);
-        hdcarray[hdcIndex].videobuffer[offset] = hdcarray[hdcIndex].pen;
+        setpixelinbuffer(hdcIndex,x1,y1);
 
         if (x1 == x2 && y1 == y2) {
             break;
@@ -189,7 +207,7 @@ int sys_setpencolour(void){
     int b;
 
     if(getcurrentvideomode() == 0x12){
-        cprintf("ERROR: Unsupported video mode!");
+        cprintf("ERROR: Unsupported video mode!\n");
         return -1;
     }
 
@@ -238,7 +256,7 @@ int sys_selectpen(void){
     }
 
     if (index < 0 || index > maxindex) {
-        cprintf("ERROR: Pen index out of range!");
+        cprintf("ERROR: Pen index out of range!\n");
         return -1; // Return an error code to indicate out-of-bounds
     }
 
@@ -260,13 +278,9 @@ int sys_fillrect(void){
         return -1;
     }
 
-    //char* videoMemory = (char*)P2V(0xA0000);
-    ushort offset;
     for (int y = rect->top; y <= rect->bottom; y++) {
             for (int x = rect->left; x <= rect->right; x++) {
-                offset = hdcarray[hdcIndex].screen.x * y + x;
-                //cprintf("X:%d Y:%d\n", x, y);
-                hdcarray[hdcIndex].videobuffer[offset] = hdcarray[hdcIndex].pen;
+                setpixelinbuffer(hdcIndex,x,y);
             }
         }
 
@@ -298,21 +312,27 @@ int sys_beginpaint(void){
             if(currentvideomode == 0x13){
                 hdcarray[i].screen.x = 320;
                 hdcarray[i].screen.y = 200;
+                //hdcarray[i].videobuffer = (char *) malloc(320 * 320 * sizeof(char));
+                memmove(hdcarray[i].videobuffer[0], plane1, sizeof(char) * 320 * 200);
             }else if(currentvideomode == 0x12){
                 hdcarray[i].screen.x = 640;
-                hdcarray[i].screen.y = 400; 
+                hdcarray[i].screen.y = 400;
+                for (short j = 0; j < 4; j++){
+                    setplane(j);
+                    uchar* mem = getframebufferbase();
+                    memmove(hdcarray[i].videobuffer[j], mem, sizeof(char) * 320 * 200);
+                }
+                cprintf("start paint\n");
             }else{
                 hdcarray[i].locked = false;
-                cprintf("ERROR: Unsupported video mode!");
+                cprintf("ERROR: Unsupported video mode!\n");
                 return -1;
             }
-
-            memmove(hdcarray[i].videobuffer, crt, sizeof(char) * 640 * 400);
             return i;
         }
     }
 
-    cprintf("ERROR: No free HDC!");
+    cprintf("ERROR: No free HDC!\n");
     return -1;
 }
 int sys_endpaint(void){
@@ -321,10 +341,20 @@ int sys_endpaint(void){
     if (argint(0, &hdc) < 0) {
         return -1;
     }
-    memmove(crt, hdcarray[hdc].videobuffer, sizeof(char) * 640 * 400);
+    
+    int currentvideomode = getcurrentvideomode();
+    if(currentvideomode == 0x13){
+        memmove(plane1, hdcarray[hdc].videobuffer[0], sizeof(char) * 320 * 200);
+    }else if(currentvideomode == 0x12){
+        for (short i = 0; i < 4; i++){
+            setplane(i);
+            uchar* mem = getframebufferbase();;
+            memmove(mem, hdcarray[hdc].videobuffer[i], sizeof(char) * 320 * 200);
+        }
+    }
+
+    //free(hdcarray[hdc].videobuffer);
     hdcarray[hdc].locked = false;
-
-
     return 1;
 }
 
@@ -335,7 +365,17 @@ int sys_redraw(void){
     if (argint(0, &hdc) < 0) {
         return -1;
     }
-    memmove(crt, hdcarray[hdc].videobuffer, sizeof(char) * 640 * 400);
+
+    int currentvideomode = getcurrentvideomode();
+    if(currentvideomode == 0x13){
+        memmove(plane1, hdcarray[hdc].videobuffer[0], sizeof(char) * 320 * 200);
+    }else if(currentvideomode == 0x12){
+        for (short i = 0; i < 4; i++){
+            setplane(i);
+            uchar* mem = getframebufferbase();;
+            memmove(mem, hdcarray[hdc].videobuffer[i], sizeof(char) * 320 * 200);
+        }
+    }
 
     return 1;
 }
