@@ -5,7 +5,7 @@
 
 #define MAX_HDC 4
 
-static ushort *plane1 = (ushort*)P2V(0xA0000);
+
 
 struct point {
     int x;
@@ -18,8 +18,9 @@ struct hdc {
     bool locked;
     char  videobuffer[4][320 * 200];
 };
-struct hdc hdcarray[MAX_HDC];
 
+struct hdc hdcarray[MAX_HDC];
+static ushort *plane1 = (ushort*)P2V(0xA0000);
 
 void setpixelinbuffer(int hdcIndex, int x, int y) {
     int currentvideomode = getcurrentvideomode();
@@ -42,7 +43,6 @@ void setpixelinbuffer(int hdcIndex, int x, int y) {
 }
 
 int sys_setpixel(void){
-
     int hdcIndex;
     int x;
     int y;
@@ -75,7 +75,6 @@ int sys_setpixel(void){
     return 0; // Return 0 to indicate success
 }
 int sys_moveto(void){
-
     int hdcIndex;
     int x;
     int y;
@@ -160,12 +159,10 @@ int sys_lineto(void){
         if (x1 == x2 && y1 == y2) {
             break;
         }
-
         if (err > -dy) {
             err -= dy;
             x1 += sx;
         }
-
         if (err < dx) {
             err += dx;
             y1 += sy;
@@ -176,7 +173,6 @@ int sys_lineto(void){
     hdcarray[hdcIndex].mypoint.y = y2;
 
     return 1;
-
 }
 
 void clear320x200x256() {
@@ -233,8 +229,8 @@ int sys_setpencolour(void){
     outb(0x3C9,g);
     outb(0x3C9,b);
     return 1;
-
 }
+
 int sys_selectpen(void){
     int hdcIndex;
     int index;
@@ -262,7 +258,6 @@ int sys_selectpen(void){
 
     hdcarray[hdcIndex].pen = index;
     return 1;
-
 }
 
 
@@ -335,6 +330,7 @@ int sys_beginpaint(void){
     cprintf("ERROR: No free HDC!\n");
     return -1;
 }
+
 int sys_endpaint(void){
     int hdc;
 
@@ -357,7 +353,6 @@ int sys_endpaint(void){
     hdcarray[hdc].locked = false;
     return 1;
 }
-
 
 int sys_redraw(void){
     int hdc;
