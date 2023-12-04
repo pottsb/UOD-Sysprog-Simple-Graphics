@@ -27,7 +27,6 @@ int main(int argc, char* argv[])
         setpixel(hdc,x,y);
         redraw(hdc);
         sleep(1);
-
     }
 
     int squareSize = 100; // Start with a 50x50 square
@@ -38,7 +37,6 @@ int main(int argc, char* argv[])
         setpencolour(penindex, 0, 0, 0);
         selectpen(hdc, penindex);
         
-
         moveto(hdc, startX, startY);
         lineto(hdc, startX + squareSize, startY);
         lineto(hdc, startX + squareSize, startY + squareSize);
