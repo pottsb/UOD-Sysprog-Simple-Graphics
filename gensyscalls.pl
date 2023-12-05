@@ -38,7 +38,7 @@ my @syscalls = (
                 "getch",
 				"greeting",
 				"shutdown",
-
+				"setvideomode",
 				"setpixel",
 				"moveto",
 				"lineto",
