@@ -70,3 +70,4 @@ int outputgraphicsbuffertoscreen(char (*videobuffer)[320 * 200]);
 //====
 
 uchar getcurrentvideomode(void); 
+int	  systemsetvideomode(int mode);

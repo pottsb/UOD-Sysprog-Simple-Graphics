@@ -36,12 +36,12 @@ my @syscalls = (
                 "mkdir",
 				"close",
                 "getch",
-				"setvideomode",
 				"greeting",
 				"shutdown",
 				"outputgraphicsbuffertoscreen",
 				"getcurrentvideomode",
-				"setpencolour"
+				"setpencolour",
+				"systemsetvideomode"
 
 			   );
 

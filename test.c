@@ -32,6 +32,7 @@ int main(int argc, char* argv[])
     setpixel(hdc,11,11);
 
     
+    moveto(hdc, 100, 50);
     for (int i = 0; i < 20; i++)
     {
     moveto(hdc, i * 10, i * 5);

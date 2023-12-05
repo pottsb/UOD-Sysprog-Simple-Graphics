@@ -182,6 +182,7 @@ void            uartputc(int);
 
 // vga.c
 int				videosetmode(uchar mode);
+int				systemvideosetmode(uchar mode);
 uchar			getcurrentvideomode();
 void			setplane(uchar plane);
 uchar*			getframebufferbase();

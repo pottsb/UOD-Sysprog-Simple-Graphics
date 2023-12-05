@@ -157,8 +157,8 @@ void setpixelinbuffer(int hdcIndex, int x, int y) {
         ushort byteOffset = (hdcarray[hdcIndex].screen.x * y + x) / 8;
         ushort bitPosition = x % 8;
 
-        for (short i = 0; i < 4; i++) {
-            short color_bit = (hdcarray[hdcIndex].pen >> i) & 1; // Isolate the bit for the current plane
+        for (ushort i = 0; i < 4; i++) {
+            ushort color_bit = (hdcarray[hdcIndex].pen >> i) & 1; // Isolate the bit for the current plane
             if (color_bit) {
                 videobuffer[i][byteOffset] |= (1 << (7 - bitPosition)); // Set the bit at the correct position
             } else {
@@ -286,4 +286,20 @@ int fillrect(int hdcIndex, struct rect *rect){
         }
 
     return 0;
+}
+
+
+int setvideomode(int mode) {
+
+    for(int i = 0; i < 320 * 200; i++){    
+        videobuffer[0][i] = 0x0;
+    }
+
+    for(ushort i = 0; i<4; i++){
+        for(int j = 0; j < 320 * 200; j++){    // char is 4 bits 4 * 64320 = all the pixels
+            videobuffer[i][j] = 0x0;
+        }
+    }
+
+    return systemsetvideomode(mode);
 }
