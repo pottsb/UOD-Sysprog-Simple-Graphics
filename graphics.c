@@ -5,20 +5,7 @@
 
 #define MAX_HDC 4
 
-
-
-struct point {
-    int x;
-    int y;
-};
-struct hdc {
-    struct point mypoint;
-    struct point screen;
-    short pen;
-    bool locked;
-    char  videobuffer[4][320 * 200];
-};
-
+char  videobuffer[4][320 * 200];
 struct hdc hdcarray[MAX_HDC];
 static ushort *plane1 = (ushort*)P2V(0xA0000);
 
@@ -26,7 +13,7 @@ void setpixelinbuffer(int hdcIndex, int x, int y) {
     int currentvideomode = getcurrentvideomode();
     ushort offset = hdcarray[hdcIndex].screen.x * y + x;
     if (currentvideomode == 0x13) {
-        hdcarray[hdcIndex].videobuffer[0][offset] = hdcarray[hdcIndex].pen;
+        videobuffer[0][offset] = hdcarray[hdcIndex].pen;
     } else if (currentvideomode == 0x12) {
         ushort byteOffset = (hdcarray[hdcIndex].screen.x * y + x) / 8;
         ushort bitPosition = x % 8;
@@ -34,9 +21,9 @@ void setpixelinbuffer(int hdcIndex, int x, int y) {
         for (short i = 0; i < 4; i++) {
             short color_bit = (hdcarray[hdcIndex].pen >> i) & 1; // Isolate the bit for the current plane
             if (color_bit) {
-                hdcarray[hdcIndex].videobuffer[i][byteOffset] |= (1 << (7 - bitPosition)); // Set the bit at the correct position
+                videobuffer[i][byteOffset] |= (1 << (7 - bitPosition)); // Set the bit at the correct position
             } else {
-                hdcarray[hdcIndex].videobuffer[i][byteOffset] &= ~(1 << (7 - bitPosition)); // Clear the bit
+                videobuffer[i][byteOffset] &= ~(1 << (7 - bitPosition)); // Clear the bit
             }
         }
     }
@@ -308,14 +295,14 @@ int sys_beginpaint(void){
                 hdcarray[i].screen.x = 320;
                 hdcarray[i].screen.y = 200;
                 //hdcarray[i].videobuffer = (char *) malloc(320 * 320 * sizeof(char));
-                memmove(hdcarray[i].videobuffer[0], plane1, sizeof(char) * 320 * 200);
+                memmove(videobuffer[0], plane1, sizeof(char) * 320 * 200);
             }else if(currentvideomode == 0x12){
                 hdcarray[i].screen.x = 640;
                 hdcarray[i].screen.y = 400;
                 for (short j = 0; j < 4; j++){
                     setplane(j);
                     uchar* mem = getframebufferbase();
-                    memmove(hdcarray[i].videobuffer[j], mem, sizeof(char) * 320 * 200);
+                    memmove(videobuffer[j], mem, sizeof(char) * 320 * 200);
                 }
                 cprintf("start paint\n");
             }else{
@@ -340,12 +327,12 @@ int sys_endpaint(void){
     
     int currentvideomode = getcurrentvideomode();
     if(currentvideomode == 0x13){
-        memmove(plane1, hdcarray[hdc].videobuffer[0], sizeof(char) * 320 * 200);
+        memmove(plane1, videobuffer[0], sizeof(char) * 320 * 200);
     }else if(currentvideomode == 0x12){
         for (short i = 0; i < 4; i++){
             setplane(i);
             uchar* mem = getframebufferbase();;
-            memmove(mem, hdcarray[hdc].videobuffer[i], sizeof(char) * 320 * 200);
+            memmove(mem, videobuffer[i], sizeof(char) * 320 * 200);
         }
     }
 
@@ -363,12 +350,12 @@ int sys_redraw(void){
 
     int currentvideomode = getcurrentvideomode();
     if(currentvideomode == 0x13){
-        memmove(plane1, hdcarray[hdc].videobuffer[0], sizeof(char) * 320 * 200);
+        memmove(plane1, videobuffer[0], sizeof(char) * 320 * 200);
     }else if(currentvideomode == 0x12){
         for (short i = 0; i < 4; i++){
             setplane(i);
             uchar* mem = getframebufferbase();;
-            memmove(mem, hdcarray[hdc].videobuffer[i], sizeof(char) * 320 * 200);
+            memmove(mem, videobuffer[i], sizeof(char) * 320 * 200);
         }
     }
 
