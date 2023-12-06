@@ -108,8 +108,3 @@ int sys_shutdown(void) {
 
     return 0;
 }
-
-void testfunc() {
-	
-    cprintf("testfunc called!!!!!\n");
-}

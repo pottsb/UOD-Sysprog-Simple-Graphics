@@ -51,7 +51,6 @@ int atoi(const char*);
 // sysproc.c
 int greeting(void);
 int shutdown(int restart);
-void testfunc(); //--------------------------------
 
 // ulib.c
 int setpixel(int hdcIndex, int x, int y);
