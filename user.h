@@ -67,7 +67,5 @@ int redraw(int hdc);
 //graphics.c
 int setpencolour(int index, int r, int g, int b);
 int outputgraphicsbuffertoscreen(char (*videobuffer)[320 * 200]);
-//====
-
-uchar getcurrentvideomode(void); 
-int	  systemsetvideomode(int mode);
+void returnHDC(void);
+int getHDC(struct hdc*);

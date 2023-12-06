@@ -39,9 +39,10 @@ my @syscalls = (
 				"greeting",
 				"shutdown",
 				"outputgraphicsbuffertoscreen",
-				"getcurrentvideomode",
 				"setpencolour",
-				"systemsetvideomode"
+				"setvideomode",
+				"getHDC",
+				"returnHDC"
 
 			   );
 

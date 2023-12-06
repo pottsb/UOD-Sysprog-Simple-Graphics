@@ -7,15 +7,11 @@ int main(int argc, char* argv[])
 {
     setvideomode(0x13);
 
-
     setpencolour(19,0,0,60);
-
     int hdc = beginpaint(0);
     struct rect recta = {.top = 90, .left = 10, .bottom = 190, .right = 110 };
-
     selectpen(hdc,5);
     fillrect(hdc,&recta);
-
     selectpen(hdc,19);
     moveto(hdc, 100, 50);
     lineto(hdc, 200, 50);
@@ -23,16 +19,12 @@ int main(int argc, char* argv[])
     lineto(hdc, 100, 150);
     lineto(hdc, 100, 50);
 
-
-
     selectpen(hdc,1);
     setpixel(hdc,10,10);
     setpixel(hdc,11,10);
     setpixel(hdc,10,11);
     setpixel(hdc,11,11);
 
-    
-    moveto(hdc, 100, 50);
     for (int i = 0; i < 20; i++)
     {
     moveto(hdc, i * 10, i * 5);
@@ -60,14 +52,11 @@ int main(int argc, char* argv[])
     lineto(hdc, 100, 150);
     lineto(hdc, 100, 50);
 
-
-
     selectpen(hdc,12);
     setpixel(hdc,10,10);
     setpixel(hdc,11,10);
     setpixel(hdc,10,11);
     setpixel(hdc,11,11);
-
     
     for (int i = 0; i < 40; i++)
     {

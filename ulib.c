@@ -98,71 +98,40 @@ void* memmove(void *vdst, const void *vsrc, int n) {
 }
 
 // ====================================================================================
-#define MAX_HDC 4
-struct hdc hdcarray[MAX_HDC];
-char  videobuffer[4][320 * 200];
+
+struct hdc hdc;
 
 int beginpaint(int hwnd){
-
-    // loop through all hdcs checking for a free one
-    ushort i;
-    for (i = 0; i < MAX_HDC; i++) { 
-        if(hdcarray[i].locked == false){
-            // lock the hdc and reset vars
-            hdcarray[i].locked = true;
-            hdcarray[i].mypoint.x = 0;
-            hdcarray[i].mypoint.y = 0;
-            hdcarray[i].pen = 15;
-
-            // store the screen res based on video mode when begin paint is called.
-            // this is used for bounds checking and pixel position calculations.
-            int currentvideomode = getcurrentvideomode();
-            hdcarray[i].videomode = currentvideomode;
-            if(currentvideomode == 0x13){
-                hdcarray[i].screen.x = 320;
-                hdcarray[i].screen.y = 200;
-            }else if(currentvideomode == 0x12){
-                hdcarray[i].screen.x = 640;
-                hdcarray[i].screen.y = 400;
-            }else{
-                hdcarray[i].locked = false;
-                printf(1,"ERROR: Unsupported video mode!\n");
-                return -1;
-            }
-            return i;
-        }
-    }
-
-    printf(1,"ERROR: No free HDC!\n");
-    return -1;
-}
-
-int endpaint(int hdc){
-    outputgraphicsbuffertoscreen(videobuffer);
-    hdcarray[hdc].locked = false;
+    getHDC(&hdc); 
     return 1;
 }
 
-int redraw(int hdc){
-    outputgraphicsbuffertoscreen(videobuffer);
+int endpaint(int hdcIndex){
+    outputgraphicsbuffertoscreen(hdc.videobuffer);
+    returnHDC();
+    return 1;
+}
+
+int redraw(int hdcIndex){
+    outputgraphicsbuffertoscreen(hdc.videobuffer);
     return 1;
 }
 
 
 void setpixelinbuffer(int hdcIndex, int x, int y) {
-    ushort offset = hdcarray[hdcIndex].screen.x * y + x;
-    if (hdcarray[hdcIndex].videomode == 0x13) {
-        videobuffer[0][offset] = hdcarray[hdcIndex].pen;
-    } else if (hdcarray[hdcIndex].videomode == 0x12) {
-        ushort byteOffset = (hdcarray[hdcIndex].screen.x * y + x) / 8;
+    ushort offset = hdc.screen.x * y + x;
+    if (hdc.videomode == 0x13) {
+        hdc.videobuffer[0][offset] = hdc.pen;
+    } else if (hdc.videomode == 0x12) {
+        ushort byteOffset = (hdc.screen.x * y + x) / 8;
         ushort bitPosition = x % 8;
 
         for (ushort i = 0; i < 4; i++) {
-            ushort color_bit = (hdcarray[hdcIndex].pen >> i) & 1; // Isolate the bit for the current plane
+            ushort color_bit = (hdc.pen >> i) & 1; // Isolate the bit for the current plane
             if (color_bit) {
-                videobuffer[i][byteOffset] |= (1 << (7 - bitPosition)); // Set the bit at the correct position
+                hdc.videobuffer[i][byteOffset] |= (1 << (7 - bitPosition)); // Set the bit at the correct position
             } else {
-                videobuffer[i][byteOffset] &= ~(1 << (7 - bitPosition)); // Clear the bit
+                hdc.videobuffer[i][byteOffset] &= ~(1 << (7 - bitPosition)); // Clear the bit
             }
         }
     }
@@ -173,13 +142,13 @@ int setpixel(int hdcIndex, int x, int y){
     // Check the pixels are within the bounds of display mode
     if (x < 0) {
         x = 0;
-    } else if (x > hdcarray[hdcIndex].screen.x) {
-        x = hdcarray[hdcIndex].screen.x;
+    } else if (x > hdc.screen.x) {
+        x = hdc.screen.x;
     }
     if (y < 0) {
         y = 0;
-    } else if (y > hdcarray[hdcIndex].screen.y) {
-        y = hdcarray[hdcIndex].screen.y;
+    } else if (y > hdc.screen.y) {
+        y = hdc.screen.y;
     }
     
     setpixelinbuffer(hdcIndex,x,y);
@@ -191,18 +160,18 @@ int moveto(int hdcIndex, int x, int y){
     // Check the pixels are within the bounds of display mode
     if (x < 0) {
         x = 0;
-    } else if (x > hdcarray[hdcIndex].screen.x) {
-        x = hdcarray[hdcIndex].screen.x;
+    } else if (x > hdc.screen.x) {
+        x = hdc.screen.x;
     }
     if (y < 0) {
         y = 0;
-    } else if (y > hdcarray[hdcIndex].screen.y) {
-        y = hdcarray[hdcIndex].screen.y;
+    } else if (y > hdc.screen.y) {
+        y = hdc.screen.y;
     }
 
 
-    hdcarray[hdcIndex].mypoint.x = x;
-    hdcarray[hdcIndex].mypoint.y = y;
+    hdc.mypoint.x = x;
+    hdc.mypoint.y = y;
 
     return 0;
 }
@@ -216,17 +185,17 @@ int lineto(int hdcIndex, int x2, int y2){
     // Check the pixels are within the bounds of display mode
     if (x2 < 0) {
         x2 = 0;
-    } else if (x2 > hdcarray[hdcIndex].screen.x) {
-        x2 = hdcarray[hdcIndex].screen.x;
+    } else if (x2 > hdc.screen.x) {
+        x2 = hdc.screen.x;
     }
     if (y2 < 0) {
         y2 = 0;
-    } else if (y2 > hdcarray[hdcIndex].screen.y) {
-        y2 = hdcarray[hdcIndex].screen.y;
+    } else if (y2 > hdc.screen.y) {
+        y2 = hdc.screen.y;
     }
 
-    int y1 = hdcarray[hdcIndex].mypoint.y;
-    int x1 = hdcarray[hdcIndex].mypoint.x;
+    int y1 = hdc.mypoint.y;
+    int x1 = hdc.mypoint.x;
 
 
     int dx = abs(x2 - x1);
@@ -251,20 +220,18 @@ int lineto(int hdcIndex, int x2, int y2){
         }
     }
 
-    hdcarray[hdcIndex].mypoint.x = x2;
-    hdcarray[hdcIndex].mypoint.y = y2;
+    hdc.mypoint.x = x2;
+    hdc.mypoint.y = y2;
 
     return 0;
 }
 
-
-
 int selectpen(int hdcIndex, int index){
 
     int maxindex = 0;
-    if(hdcarray[hdcIndex].videomode == 0x13){
+    if(hdc.videomode == 0x13){
         maxindex = 255;
-    }else if(hdcarray[hdcIndex].videomode == 0x12){
+    }else if(hdc.videomode == 0x12){
         maxindex = 15;
     }
 
@@ -273,7 +240,7 @@ int selectpen(int hdcIndex, int index){
         return -1; // Return an error code to indicate out-of-bounds
     }
 
-    hdcarray[hdcIndex].pen = index;
+    hdc.pen = index;
     return 0;
 }
 
@@ -286,20 +253,4 @@ int fillrect(int hdcIndex, struct rect *rect){
         }
 
     return 0;
-}
-
-
-int setvideomode(int mode) {
-
-    for(int i = 0; i < 320 * 200; i++){    
-        videobuffer[0][i] = 0x0;
-    }
-
-    for(ushort i = 0; i<4; i++){
-        for(int j = 0; j < 320 * 200; j++){    // char is 4 bits 4 * 64320 = all the pixels
-            videobuffer[i][j] = 0x0;
-        }
-    }
-
-    return systemsetvideomode(mode);
 }

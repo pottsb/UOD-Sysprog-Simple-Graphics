@@ -553,7 +553,7 @@ int	videosetmode(uchar mode) {
 
 // System call to set video mode
 
-int sys_systemsetvideomode(void) {
+int sys_setvideomode(void) {
 	int mode;
 
 	if (argint(0, &mode) < 0) {
@@ -563,8 +563,5 @@ int sys_systemsetvideomode(void) {
 }
 
 uchar getcurrentvideomode() {
-	return currentVideoMode;
-}
-uchar sys_getcurrentvideomode(void) {
 	return currentVideoMode;
 }
