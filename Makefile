@@ -193,14 +193,17 @@ UPROGS=\
 	_mkdir\
 	_rm\
 	_sh\
-	_stressfs\
-	_usertests\
 	_wc\
 	_zombie\
 	_hello\
 	_shutdown\
 	_test\
 	_demo\
+	_fork\
+
+
+#	_stressfs\
+	_usertests\
 
 fs.img: mkfs $(UPROGS)
 	./mkfs fs.img $(UPROGS)

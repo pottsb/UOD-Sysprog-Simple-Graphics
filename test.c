@@ -68,7 +68,6 @@ int main(int argc, char* argv[])
     lineto(hdc, i * 10, i * 5);
     }
 
-    getch();
     endpaint(hdc);
     getch();
     setvideomode(0x03);

@@ -2,10 +2,14 @@
 #include "defs.h"
 #include "x86.h"
 #include "memlayout.h"
-
+#include "spinlock.h"
 
 static ushort *plane1 = (ushort*)P2V(0xA0000);
 struct hdc hdc;
+static struct {
+    struct spinlock lock;
+    int locking;
+} gfx;
 
 void clear320x200x256() {
     char* videoMemory = (char*)P2V(0xA0000);
@@ -33,7 +37,14 @@ void clear640x400x16(){
     }
 }
 
+void dontcallthis(){
+acquire(&gfx.lock);
+release(&gfx.lock);
+}
+
 int sys_getHDC(void){
+
+    
 
     struct hdc (*user_space_ptr);
     if (argptr(0, (void*)&user_space_ptr,sizeof(struct hdc)) < 0) {
@@ -72,7 +83,7 @@ int sys_getHDC(void){
 
 
 void sys_returnHDC(void){
-
+    
 }
 
 
