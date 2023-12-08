@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
         sleep(1);
     }
 
-    int squareSize = 100; // Start with a 50x50 square
+    int squareSize = 100;
     int penindex = 20;
     while (squareSize >= 2) {
         int startX = (320 - squareSize) / 2;
@@ -47,43 +47,44 @@ int main(int argc, char* argv[])
         penindex++;
     }
 
-ushort c1 = rand() %69;
-ushort c2 = rand() %69;
-ushort c3 = rand() %69;
+    ushort c1 = rand() %69;
+    ushort c2 = rand() %69;
+    ushort c3 = rand() %69;
 
-for (int i = 0; i < 500; i += 3) {
-    setpencolour((i % 69) + 20, c1, c2, c3);
-    setpencolour((i % 69) + 21, c1, c2, c3);
-    setpencolour((i % 69) + 22, c1, c2, c3);
-    
-    ushort ct = c1;
-    c1 = c2;
-    c2 = c3;
-    c3 = ct;
-    
-    redraw(hdc);
-    sleep(4);
-}
+    for (int i = 0; i < 250; i += 3) {
+        setpencolour((i % 69) + 20, c1, c2, c3);
+        setpencolour((i % 69) + 21, c1, c2, c3);
+        setpencolour((i % 69) + 22, c1, c2, c3);
+        
+        ushort ct = c1;
+        c1 = c2;
+        c2 = c3;
+        c3 = ct;
+        
+        redraw(hdc);
+        sleep(4);
+    }
 
-    struct rect recta;
+        struct rect rect;
 
   
 
-    for(int i = 0; i <= 300; i+=21){
-        for(int j = 0; j <= 180; j+=21){
-                recta.top = j;
-                recta.left = i;
-                recta.bottom = j + 20;
-                recta.right = i + 20;
+    for(int i = 0; i <= 300; i+=20){
+        for(int j = 0; j <= 180; j+=19){
+                rect.top = j;
+                rect.left = i;
+                rect.bottom = j + 20;
+                rect.right = i + 20;
                 pen = rand() %16;
                 selectpen(hdc,pen);
-                fillrect(hdc,&recta);
+                fillrect(hdc,&rect);
                 redraw(hdc);
+                //printf(1,"t: %d l:%d, b: %d r: %d\n", recta.top,recta.left,recta.bottom,recta.right);
                 sleep(50);
+
         }
 
     }
-    getch();
 
     endpaint(hdc);
     setvideomode(0x12);
@@ -116,14 +117,30 @@ for (int i = 0; i < 500; i += 3) {
         lineto(hdc, startX, startY + squareSize);
         lineto(hdc, startX, startY);
 
-        squareSize -= 2;
+        squareSize -= 3;
         penindex++;
         redraw(hdc);
     }
 
+        for(int i = 0; i <= 640; i+=40){
+        for(int j = 0; j <= 400; j+=40){
+                rect.top = j;
+                rect.left = i;
+                rect.bottom = j + 40;
+                rect.right = i + 40;
+                pen = rand() %16;
+                selectpen(hdc,pen);
+                fillrect(hdc,&rect);
+                redraw(hdc);
+                //printf(1,"t: %d l:%d, b: %d r: %d\n", recta.top,recta.left,recta.bottom,recta.right);
+                sleep(1);
+
+        }
+
+    }
+
 
     endpaint(hdc);
-    getch();
     setvideomode(0x03);
 
 }

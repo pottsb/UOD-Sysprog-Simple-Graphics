@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     endpaint(hdc);
     exit();
     }else if (pid > 0){
-
+        //sleep(1);
     int hdc = beginpaint(0);
     for (int i = 10; i < 20; i++){
         moveto(hdc, i * 10, i * 5);
@@ -37,14 +37,9 @@ int main(int argc, char* argv[])
 
     }
 
-
-
-
-
-
-
     
     getch();
+    wait();
     setvideomode(0x03);
     exit();
 }
