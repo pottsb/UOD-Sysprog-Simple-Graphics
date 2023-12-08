@@ -7,7 +7,7 @@ struct point {
     int y;
 };
 struct hdc {
-    struct point mypoint;
+    struct point lastpoint;
     struct point screen;
     short pen;
     short videomode;

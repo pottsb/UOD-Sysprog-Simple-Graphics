@@ -47,15 +47,43 @@ int main(int argc, char* argv[])
         penindex++;
     }
 
+ushort c1 = rand() %69;
+ushort c2 = rand() %69;
+ushort c3 = rand() %69;
 
-    for(int i = 0; i < 1000; i+=3){
-        setpencolour((i%69) + 20, i%63, 0, 0);
-        setpencolour((i%69) + 21, 0, i%63, 0);
-        setpencolour((i%69) + 22, 0, 0, i%63);
-        redraw(hdc);
-        sleep(4);
+for (int i = 0; i < 500; i += 3) {
+    setpencolour((i % 69) + 20, c1, c2, c3);
+    setpencolour((i % 69) + 21, c1, c2, c3);
+    setpencolour((i % 69) + 22, c1, c2, c3);
+    
+    ushort ct = c1;
+    c1 = c2;
+    c2 = c3;
+    c3 = ct;
+    
+    redraw(hdc);
+    sleep(4);
+}
+
+    struct rect recta;
+
+  
+
+    for(int i = 0; i <= 300; i+=21){
+        for(int j = 0; j <= 180; j+=21){
+                recta.top = j;
+                recta.left = i;
+                recta.bottom = j + 20;
+                recta.right = i + 20;
+                pen = rand() %16;
+                selectpen(hdc,pen);
+                fillrect(hdc,&recta);
+                redraw(hdc);
+                sleep(50);
+        }
+
     }
-
+    getch();
 
     endpaint(hdc);
     setvideomode(0x12);

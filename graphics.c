@@ -4,14 +4,16 @@
 #include "memlayout.h"
 #include "spinlock.h"
 
-static ushort *plane1 = (ushort*)P2V(0xA0000);
+static ushort *cgaframebuffer = (ushort*)P2V(0xA0000);
 struct hdc hdc;
 static struct {
     struct spinlock lock;
     int locking;
 } gfx;
 
-void clear320x200x256() {
+// clear video memory and buffer
+// called when changing video modes
+void clear320x200x256(void) {
     char* videoMemory = (char*)P2V(0xA0000);
 
     for(ushort i = 0; i < 320 * 200; i++){    
@@ -21,72 +23,75 @@ void clear320x200x256() {
 
 }
 
-void clear640x400x16(){
+// clear video memory and buffer
+// called when changing video modes
+void clear640x400x16(void){
     for(ushort i = 0; i<=4; i++){
         setplane(i);
         char* videoMemory = (char*)getframebufferbase();
 
-        for(uint j = 0; j < 320 * 200; j++){ 
+        for(ushort j = 0; j < 320 * 200; j++){ 
             videoMemory[j] = 0x0;
         }
     }
     for(ushort i = 0; i<4; i++){
-        for(uint j = 0; j < 320 * 200; j++){  
+        for(ushort j = 0; j < 320 * 200; j++){  
             hdc.videobuffer[i][j] = 0x0;
         }
     }
 }
 
-void dontcallthis(){
+void dontcallthis(void){
 acquire(&gfx.lock);
 release(&gfx.lock);
 }
 
+// called from beginpain()
 int sys_getHDC(void){
 
-    
-
-    struct hdc (*user_space_ptr);
-    if (argptr(0, (void*)&user_space_ptr,sizeof(struct hdc)) < 0) {
+    struct hdc (*userhdcpointer);
+    if (argptr(0, (void*)&userhdcpointer,sizeof(struct hdc)) < 0) {
         return -1;
     }
         
-    // lock the hdc and reset vars
-    hdc.mypoint.x = 0;
-    hdc.mypoint.y = 0;
+    // reset hdc vars
+    hdc.lastpoint.x = 0;
+    hdc.lastpoint.y = 0;
     hdc.pen = 15;
 
     // store the screen res based on video mode when begin paint is called.
     // this is used for bounds checking and pixel position calculations.
-    int currentvideomode = getcurrentvideomode();
+    // copy the current contents of the screen into the buffer
+    ushort currentvideomode = getcurrentvideomode();
     hdc.videomode = currentvideomode;
     if(currentvideomode == 0x13){
         hdc.screen.x = 320;
         hdc.screen.y = 200;
-        memmove(hdc.videobuffer[0], plane1, sizeof(char) * 320 * 200);
+        memmove(hdc.videobuffer[0], cgaframebuffer, sizeof(char) * 320 * 200);
     }else if(currentvideomode == 0x12){
         hdc.screen.x = 640;
         hdc.screen.y = 400;
         for (short j = 0; j < 4; j++){
             setplane(j);
-            uchar* mem = getframebufferbase();
-            memmove(hdc.videobuffer[j], mem, sizeof(char) * 320 * 200);
+            uchar* framebuffer = getframebufferbase();
+            memmove(hdc.videobuffer[j], framebuffer, sizeof(char) * 320 * 200);
         }
     }else{
         cprintf("ERROR: Unsupported video mode!\n");
         return -1;
     }
 
-    memmove(user_space_ptr, &hdc, sizeof(struct hdc));
-    return 1;
+    memmove(userhdcpointer, &hdc, sizeof(struct hdc));
+    return 0;
 }
 
-
+// called from endpaint() to release the HDC lock
 void sys_returnHDC(void){
     
 }
 
-
+// called from endpaint() and redraw()
+// copies the buffer passed from user space into video memory
 int sys_outputgraphicsbuffertoscreen(void){
 
     char (*videobuffer)[320 * 200];
@@ -96,7 +101,7 @@ int sys_outputgraphicsbuffertoscreen(void){
 
     int currentvideomode = getcurrentvideomode();
     if(currentvideomode == 0x13){
-        memmove(plane1, videobuffer[0], sizeof(char) * 320 * 200);
+        memmove(cgaframebuffer, videobuffer[0], sizeof(char) * 320 * 200);
     }else if(currentvideomode == 0x12){
         for (short i = 0; i < 4; i++){
             setplane(i);
@@ -107,12 +112,19 @@ int sys_outputgraphicsbuffertoscreen(void){
     return 0;
 }
 
+int validatepenrgb(int *rgbvalue) {
+    if (*rgbvalue < 0) {
+        *rgbvalue = 0;
+    } else if (*rgbvalue > 63) {
+        *rgbvalue = 63;
+    }
+    return *rgbvalue;
+}
 
+// called directly form user programs.
 int sys_setpencolour(void){
     int index;
-    int r;
-    int g;
-    int b;
+    int r,g,b;
 
     if(getcurrentvideomode() == 0x12){
         cprintf("ERROR: Unsupported video mode!\n");
@@ -135,10 +147,14 @@ int sys_setpencolour(void){
         return -1;
     }
 
+    // clamp RGB paramiters to valid values
+    r = validatepenrgb(&r);
+    g = validatepenrgb(&g);
+    b = validatepenrgb(&b);
 
     outb(0x3C8, index);
     outb(0x3C9,r);
     outb(0x3C9,g);
     outb(0x3C9,b);
-    return 1;
+    return 0;
 }

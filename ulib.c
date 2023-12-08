@@ -97,81 +97,77 @@ void* memmove(void *vdst, const void *vsrc, int n) {
     return vdst;
 }
 
+// Stuff I added
 // ====================================================================================
 
 struct hdc hdc;
 
 int beginpaint(int hwnd){
     getHDC(&hdc); 
-    return 1;
+    return 0;
 }
 
 int endpaint(int hdcIndex){
     outputgraphicsbuffertoscreen(hdc.videobuffer);
     returnHDC();
-    return 1;
+    return 0;
 }
 
 int redraw(int hdcIndex){
     outputgraphicsbuffertoscreen(hdc.videobuffer);
-    return 1;
+    return 0;
 }
 
-
+// all pixel writes to the buffer go through this function
+// this handles the difference in writing to the buffer in the different display modes
 void setpixelinbuffer(int hdcIndex, int x, int y) {
     ushort offset = hdc.screen.x * y + x;
     if (hdc.videomode == 0x13) {
         hdc.videobuffer[0][offset] = hdc.pen;
     } else if (hdc.videomode == 0x12) {
-        ushort byteOffset = (hdc.screen.x * y + x) / 8;
-        ushort bitPosition = x % 8;
+        //pixel position in the buffer
+        ushort byteoffset = (hdc.screen.x * y + x) / 8;
+        //pixel data position in the byte
+        ushort bitposition = x % 8;
 
+        // set one pixels worth of data accross the four planes at a time
         for (ushort i = 0; i < 4; i++) {
-            ushort color_bit = (hdc.pen >> i) & 1; // Isolate the bit for the current plane
-            if (color_bit) {
-                hdc.videobuffer[i][byteOffset] |= (1 << (7 - bitPosition)); // Set the bit at the correct position
+            ushort colorbit = (hdc.pen >> i) & 1; // get the current bit for the plane
+            if (colorbit) {
+                hdc.videobuffer[i][byteoffset] |= (1 << (7 - bitposition)); // set the bit to 1
             } else {
-                hdc.videobuffer[i][byteOffset] &= ~(1 << (7 - bitPosition)); // Clear the bit
+                hdc.videobuffer[i][byteoffset] &= ~(1 << (7 - bitposition)); // set the bit to 0
             }
         }
     }
 }
 
+// clamp the pixel values to valid positions on the screen
+int validatecoordinate(int *coordinate, int lowerlimit, int upperlimit) {
+    if (*coordinate < lowerlimit) {
+        *coordinate = lowerlimit;
+    } else if (*coordinate > upperlimit) {
+        *coordinate = upperlimit;
+    }
+    return *coordinate;
+}
+
 int setpixel(int hdcIndex, int x, int y){
 
-    // Check the pixels are within the bounds of display mode
-    if (x < 0) {
-        x = 0;
-    } else if (x > hdc.screen.x) {
-        x = hdc.screen.x;
-    }
-    if (y < 0) {
-        y = 0;
-    } else if (y > hdc.screen.y) {
-        y = hdc.screen.y;
-    }
+    x = validatecoordinate(&x, 0, hdc.screen.x);
+    y = validatecoordinate(&y, 0, hdc.screen.y);
     
     setpixelinbuffer(hdcIndex,x,y);
-    return 0; // Return 0 to indicate success
+    return 0;
 }
 
 int moveto(int hdcIndex, int x, int y){
 
-    // Check the pixels are within the bounds of display mode
-    if (x < 0) {
-        x = 0;
-    } else if (x > hdc.screen.x) {
-        x = hdc.screen.x;
-    }
-    if (y < 0) {
-        y = 0;
-    } else if (y > hdc.screen.y) {
-        y = hdc.screen.y;
-    }
+    x = validatecoordinate(&x, 0, hdc.screen.x);
+    y = validatecoordinate(&y, 0, hdc.screen.y);
 
-
-    hdc.mypoint.x = x;
-    hdc.mypoint.y = y;
+    hdc.lastpoint.x = x;
+    hdc.lastpoint.y = y;
 
     return 0;
 }
@@ -182,27 +178,19 @@ int abs(int n) {
 
 int lineto(int hdcIndex, int x2, int y2){
 
-    // Check the pixels are within the bounds of display mode
-    if (x2 < 0) {
-        x2 = 0;
-    } else if (x2 > hdc.screen.x) {
-        x2 = hdc.screen.x;
-    }
-    if (y2 < 0) {
-        y2 = 0;
-    } else if (y2 > hdc.screen.y) {
-        y2 = hdc.screen.y;
-    }
+    x2 = validatecoordinate(&x2, 0, hdc.screen.x);
+    y2 = validatecoordinate(&y2, 0, hdc.screen.y);
 
-    int y1 = hdc.mypoint.y;
-    int x1 = hdc.mypoint.x;
+    // set the start point to the last saved location.
+    ushort y1 = hdc.lastpoint.y;
+    ushort x1 = hdc.lastpoint.x;
 
-
-    int dx = abs(x2 - x1);
-    int dy = abs(y2 - y1);
-    int sx = (x1 < x2) ? 1 : -1;
-    int sy = (y1 < y2) ? 1 : -1;
-    int err = dx - dy;
+    // Bresenham’s line algorithm
+    ushort dx = abs(x2 - x1);
+    ushort dy = abs(y2 - y1);
+    ushort sx = (x1 < x2) ? 1 : -1;
+    ushort sy = (y1 < y2) ? 1 : -1;
+    short err = dx - dy;
 
     while (1) {
         setpixelinbuffer(hdcIndex,x1,y1);
@@ -220,15 +208,33 @@ int lineto(int hdcIndex, int x2, int y2){
         }
     }
 
-    hdc.mypoint.x = x2;
-    hdc.mypoint.y = y2;
+    // set the saved location to the end of the line
+    hdc.lastpoint.x = x2;
+    hdc.lastpoint.y = y2;
+
+    return 0;
+}
+
+int fillrect(int hdcIndex, struct rect *rect){
+
+    rect->top = validatecoordinate(&rect->top, 0, hdc.screen.y);
+    rect->bottom = validatecoordinate(&rect->bottom, 0, hdc.screen.y);
+    rect->left = validatecoordinate(&rect->left, 0, hdc.screen.x);
+    rect->right = validatecoordinate(&rect->right, 0, hdc.screen.x);
+ 
+    
+    for (ushort y = rect->top; y <= rect->bottom; y++) {
+            for (ushort x = rect->left; x <= rect->right; x++) {
+                setpixelinbuffer(hdcIndex,x,y);
+            }
+        }
 
     return 0;
 }
 
 int selectpen(int hdcIndex, int index){
 
-    int maxindex = 0;
+    ushort maxindex = 0;
     if(hdc.videomode == 0x13){
         maxindex = 255;
     }else if(hdc.videomode == 0x12){
@@ -237,20 +243,9 @@ int selectpen(int hdcIndex, int index){
 
     if (index < 0 || index > maxindex) {
         printf(1,"ERROR: Pen index out of range!\n");
-        return -1; // Return an error code to indicate out-of-bounds
+        return -1;
     }
 
     hdc.pen = index;
-    return 0;
-}
-
-int fillrect(int hdcIndex, struct rect *rect){
-    
-    for (int y = rect->top; y <= rect->bottom; y++) {
-            for (int x = rect->left; x <= rect->right; x++) {
-                setpixelinbuffer(hdcIndex,x,y);
-            }
-        }
-
     return 0;
 }
