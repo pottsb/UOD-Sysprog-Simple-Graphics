@@ -10,8 +10,9 @@ int main(int argc, char* argv[])
     int pid = fork();
 
     if(pid == 0){
-
+    printf(1,"FORK 1 TRY GET HDC\n");    
     int hdc = beginpaint(0);
+    printf(1,"FORK 1 START\n");
     for (int i = 0; i < 10; i++){
         moveto(hdc, i * 10, i * 5);
         selectpen(hdc, 10);
@@ -21,10 +22,13 @@ int main(int argc, char* argv[])
         lineto(hdc, i * 10, i * 5);
     }
     endpaint(hdc);
+    printf(1,"FORK 1 END\n");
     exit();
     }else if (pid > 0){
-        //sleep(1);
+        sleep(1);
+    printf(1,"FORK 2 TRY GET HDC\n");   
     int hdc = beginpaint(0);
+    printf(1,"FORK 2 START\n");
     for (int i = 10; i < 20; i++){
         moveto(hdc, i * 10, i * 5);
         selectpen(hdc, 5);
@@ -34,12 +38,13 @@ int main(int argc, char* argv[])
         lineto(hdc, i * 10, i * 5);
     }
     endpaint(hdc);
+    printf(1,"FORK 2 END\n");
 
     }
 
-    
-    getch();
     wait();
+    getch();
+    
     setvideomode(0x03);
     exit();
 }

@@ -6,10 +6,12 @@
 
 static ushort *cgaframebuffer = (ushort*)P2V(0xA0000);
 struct hdc hdc;
-static struct {
-    struct spinlock lock;
-    int locking;
-} gfx;
+
+struct spinlock gfx;
+
+void graphicsinit(){
+ initlock(&gfx, "graphics");
+};
 
 // clear video memory and buffer
 // called when changing video modes
@@ -42,12 +44,14 @@ void clear640x400x16(void){
 }
 
 void dontcallthis(void){
-acquire(&gfx.lock);
-release(&gfx.lock);
+
+
 }
 
 // called from beginpain()
 int sys_getHDC(void){
+    acquire(&gfx);
+    cprintf("GET HDC CALLED");
 
     struct hdc (*userhdcpointer);
     if (argptr(0, (void*)&userhdcpointer,sizeof(struct hdc)) < 0) {
@@ -82,12 +86,14 @@ int sys_getHDC(void){
     }
 
     memmove(userhdcpointer, &hdc, sizeof(struct hdc));
+    
     return 0;
 }
 
 // called from endpaint() to release the HDC lock
 void sys_returnHDC(void){
-    
+    cprintf("RELEASE HDC CALLED");
+    release(&gfx);
 }
 
 // called from endpaint() and redraw()
@@ -112,7 +118,7 @@ int sys_outputgraphicsbuffertoscreen(void){
     return 0;
 }
 
-int validatepenrgb(int *rgbvalue) {
+int validatepenrgb(int *rgbvalue){
     if (*rgbvalue < 0) {
         *rgbvalue = 0;
     } else if (*rgbvalue > 63) {

@@ -120,7 +120,7 @@ int redraw(int hdcIndex){
 
 // all pixel writes to the buffer go through this function
 // this handles the difference in writing to the buffer in the different display modes
-void setpixelinbuffer(int hdcIndex, int x, int y) {
+void setpixelinbuffer(int hdcIndex, int x, int y){
     ushort offset = hdc.screen.x * y + x;
     if (hdc.videomode == 0x13) {
         hdc.videobuffer[0][offset] = hdc.pen;
@@ -143,7 +143,7 @@ void setpixelinbuffer(int hdcIndex, int x, int y) {
 }
 
 // clamp the pixel values to valid positions on the screen
-int validatecoordinate(int *coordinate, int lowerlimit, int upperlimit) {
+int validatecoordinate(int *coordinate, int lowerlimit, int upperlimit){
     if (*coordinate < lowerlimit) {
         *coordinate = lowerlimit;
     } else if (*coordinate > upperlimit) {
