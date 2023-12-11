@@ -65,10 +65,7 @@ int main(int argc, char* argv[])
         sleep(4);
     }
 
-        struct rect rect;
-
-  
-
+    struct rect rect;
     for(int i = 0; i <= 300; i+=20){
         for(int j = 0; j <= 180; j+=19){
                 rect.top = j;
@@ -79,7 +76,6 @@ int main(int argc, char* argv[])
                 selectpen(hdc,pen);
                 fillrect(hdc,&rect);
                 redraw(hdc);
-                //printf(1,"t: %d l:%d, b: %d r: %d\n", recta.top,recta.left,recta.bottom,recta.right);
                 sleep(50);
 
         }
@@ -132,7 +128,6 @@ int main(int argc, char* argv[])
                 selectpen(hdc,pen);
                 fillrect(hdc,&rect);
                 redraw(hdc);
-                //printf(1,"t: %d l:%d, b: %d r: %d\n", recta.top,recta.left,recta.bottom,recta.right);
                 sleep(1);
 
         }
@@ -142,5 +137,4 @@ int main(int argc, char* argv[])
 
     endpaint(hdc);
     setvideomode(0x03);
-
 }

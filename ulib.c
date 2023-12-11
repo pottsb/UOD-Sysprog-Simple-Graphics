@@ -143,9 +143,9 @@ void setpixelinbuffer(int hdcIndex, int x, int y){
 }
 
 // clamp the pixel values to valid positions on the screen
-int validatecoordinate(int *coordinate, int lowerlimit, int upperlimit){
-    if (*coordinate < lowerlimit) {
-        *coordinate = lowerlimit;
+int validatecoordinate(int *coordinate, int upperlimit){
+    if (*coordinate < 0) {
+        *coordinate = 0;
     } else if (*coordinate > upperlimit) {
         *coordinate = upperlimit;
     }
@@ -154,8 +154,8 @@ int validatecoordinate(int *coordinate, int lowerlimit, int upperlimit){
 
 int setpixel(int hdcIndex, int x, int y){
 
-    x = validatecoordinate(&x, 0, hdc.screen.x);
-    y = validatecoordinate(&y, 0, hdc.screen.y);
+    x = validatecoordinate(&x, hdc.screen.x);
+    y = validatecoordinate(&y, hdc.screen.y);
     
     setpixelinbuffer(hdcIndex,x,y);
     return 0;
@@ -163,8 +163,8 @@ int setpixel(int hdcIndex, int x, int y){
 
 int moveto(int hdcIndex, int x, int y){
 
-    x = validatecoordinate(&x, 0, hdc.screen.x);
-    y = validatecoordinate(&y, 0, hdc.screen.y);
+    x = validatecoordinate(&x, hdc.screen.x);
+    y = validatecoordinate(&y, hdc.screen.y);
 
     hdc.lastpoint.x = x;
     hdc.lastpoint.y = y;
@@ -178,8 +178,8 @@ int abs(int n) {
 
 int lineto(int hdcIndex, int x2, int y2){
 
-    x2 = validatecoordinate(&x2, 0, hdc.screen.x);
-    y2 = validatecoordinate(&y2, 0, hdc.screen.y);
+    x2 = validatecoordinate(&x2, hdc.screen.x);
+    y2 = validatecoordinate(&y2, hdc.screen.y);
 
     // set the start point to the last saved location.
     ushort y1 = hdc.lastpoint.y;
@@ -217,12 +217,11 @@ int lineto(int hdcIndex, int x2, int y2){
 
 int fillrect(int hdcIndex, struct rect *rect){
 
-    rect->top = validatecoordinate(&rect->top, 0, hdc.screen.y);
-    rect->bottom = validatecoordinate(&rect->bottom, 0, hdc.screen.y);
-    rect->left = validatecoordinate(&rect->left, 0, hdc.screen.x);
-    rect->right = validatecoordinate(&rect->right, 0, hdc.screen.x);
+    rect->top = validatecoordinate(&rect->top, hdc.screen.y);
+    rect->bottom = validatecoordinate(&rect->bottom, hdc.screen.y);
+    rect->left = validatecoordinate(&rect->left, hdc.screen.x);
+    rect->right = validatecoordinate(&rect->right, hdc.screen.x);
  
-    
     for (ushort y = rect->top; y <= rect->bottom; y++) {
             for (ushort x = rect->left; x <= rect->right; x++) {
                 setpixelinbuffer(hdcIndex,x,y);

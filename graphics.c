@@ -9,6 +9,7 @@ struct hdc hdc;
 
 struct spinlock gfx;
 
+// called from main.c
 void graphicsinit(){
  initlock(&gfx, "graphics");
 };
@@ -22,7 +23,6 @@ void clear320x200x256(void) {
         videoMemory[i] = 0x0;
         hdc.videobuffer[0][i] = 0x0;
     }
-
 }
 
 // clear video memory and buffer
@@ -43,16 +43,10 @@ void clear640x400x16(void){
     }
 }
 
-void dontcallthis(void){
-
-
-}
-
 // called from beginpain()
 int sys_getHDC(void){
     acquire(&gfx);
-    cprintf("GET HDC CALLED");
-
+    //acquireconslock();
     struct hdc (*userhdcpointer);
     if (argptr(0, (void*)&userhdcpointer,sizeof(struct hdc)) < 0) {
         return -1;
@@ -92,8 +86,8 @@ int sys_getHDC(void){
 
 // called from endpaint() to release the HDC lock
 void sys_returnHDC(void){
-    cprintf("RELEASE HDC CALLED");
     release(&gfx);
+    //releaseconslock();
 }
 
 // called from endpaint() and redraw()
