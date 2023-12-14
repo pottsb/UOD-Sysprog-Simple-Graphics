@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
                 selectpen(hdc,pen);
                 fillrect(hdc,&rect);
                 redraw(hdc);
-                sleep(50);
+                sleep(4);
 
         }
 
@@ -95,9 +95,7 @@ int main(int argc, char* argv[])
         setpixel(hdc,x,y);
         redraw(hdc);
         sleep(1);
-
     }
-
 
     squareSize = 200;
     penindex = 0;
@@ -105,7 +103,6 @@ int main(int argc, char* argv[])
         int startX = (640 - squareSize) / 2;
         int startY = (400 - squareSize) / 2;
         selectpen(hdc, 1 +(penindex%13));
-        
 
         moveto(hdc, startX, startY);
         lineto(hdc, startX + squareSize, startY);
@@ -129,12 +126,11 @@ int main(int argc, char* argv[])
                 fillrect(hdc,&rect);
                 redraw(hdc);
                 sleep(1);
-
         }
 
     }
 
-
     endpaint(hdc);
     setvideomode(0x03);
+    exit();
 }
