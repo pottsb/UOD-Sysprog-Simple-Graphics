@@ -5,7 +5,7 @@
 
 int main(int argc, char* argv[])
 {
-    setvideomode(0x13);
+    setvideomode(0x12);
 
     int pid = fork();
 

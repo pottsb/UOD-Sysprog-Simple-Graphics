@@ -8,10 +8,11 @@ static ushort *cgaframebuffer = (ushort*)P2V(0xA0000);
 struct hdc hdc;
 
 struct spinlock gfx;
+int updatingScreen;
 
 // called from main.c
 void graphicsinit(){
- initlock(&gfx, "graphics");
+ initlock(&gfx, "graphics11a1");
 };
 
 // clear video memory and buffer
@@ -46,17 +47,21 @@ void clear640x400x16(void){
 // called from beginpain()
 int sys_getHDC(void){
     acquire(&gfx);
+    while (updatingScreen) {
+        sleep(&updatingScreen, &gfx);
+    }
+    updatingScreen = 1;
+    release(&gfx);
+
     //acquireconslock();
     struct hdc (*userhdcpointer);
     if (argptr(0, (void*)&userhdcpointer,sizeof(struct hdc)) < 0) {
         return -1;
     }
-        
     // reset hdc vars
     hdc.lastpoint.x = 0;
     hdc.lastpoint.y = 0;
     hdc.pen = 15;
-
     // store the screen res based on video mode when begin paint is called.
     // this is used for bounds checking and pixel position calculations.
     // copy the current contents of the screen into the buffer
@@ -75,18 +80,21 @@ int sys_getHDC(void){
             memmove(hdc.videobuffer[j], framebuffer, sizeof(char) * 320 * 200);
         }
     }else{
-        cprintf("ERROR: Unsupported video mode!\n");
+        //printf("ERROR: Unsupported video mode!\n");
         return -1;
     }
-
     memmove(userhdcpointer, &hdc, sizeof(struct hdc));
-    
+
     return 0;
 }
 
 // called from endpaint() to release the HDC lock
 void sys_returnHDC(void){
+    acquire(&gfx);
+    updatingScreen = 0;
+    wakeup(&updatingScreen);
     release(&gfx);
+
     //releaseconslock();
 }
 
@@ -127,7 +135,7 @@ int sys_setpencolour(void){
     int r,g,b;
 
     if(getcurrentvideomode() == 0x12){
-        cprintf("ERROR: Unsupported video mode!\n");
+        //printf("ERROR: Unsupported video mode!\n");
         return -1;
     }
 

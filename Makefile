@@ -182,7 +182,6 @@ mkfs: mkfs.c fs.h
 .PRECIOUS: %.o
 
 UPROGS=\
-	_cat\
 	_echo\
 	_forktest\
 	_grep\
@@ -200,10 +199,13 @@ UPROGS=\
 	_test\
 	_demo\
 	_fork\
+	_exectest\
+	_exectest_p1\
 
 
 #	_stressfs\
 	_usertests\
+	_cat\
 
 fs.img: mkfs $(UPROGS)
 	./mkfs fs.img $(UPROGS)
