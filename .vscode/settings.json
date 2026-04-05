@@ -6,6 +6,8 @@
         "defs.h": "c",
         "user.h": "c",
         "stdlib.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "type_traits": "c",
+        "param.h": "c"
     }
 }

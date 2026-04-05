@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 
     }
 
-    int squareSize = 100; // Start with a 50x50 square
+    int squareSize = 100;
     int penindex = 20;
     while (squareSize >= 2) {
         int startX = (320 - squareSize) / 2;
@@ -49,15 +49,40 @@ int main(int argc, char* argv[])
         penindex++;
     }
 
+    ushort c1 = rand() %69;
+    ushort c2 = rand() %69;
+    ushort c3 = rand() %69;
 
-    for(int i = 0; i < 1000; i+=3){
-        setpencolour((i%69) + 20, i%63, 0, 0);
-        setpencolour((i%69) + 21, 0, i%63, 0);
-        setpencolour((i%69) + 22, 0, 0, i%63);
+    for (int i = 0; i < 250; i += 3) {
+        setpencolour((i % 69) + 20, c1, c2, c3);
+        setpencolour((i % 69) + 21, c1, c2, c3);
+        setpencolour((i % 69) + 22, c1, c2, c3);
+        
+        ushort ct = c1;
+        c1 = c2;
+        c2 = c3;
+        c3 = ct;
+        
         redraw(hdc);
         sleep(4);
     }
 
+    struct rect rect;
+    for(int i = 0; i <= 300; i+=20){
+        for(int j = 0; j <= 180; j+=19){
+                rect.top = j;
+                rect.left = i;
+                rect.bottom = j + 20;
+                rect.right = i + 20;
+                pen = rand() %16;
+                selectpen(hdc,pen);
+                fillrect(hdc,&rect);
+                redraw(hdc);
+                sleep(4);
+
+        }
+
+    }
 
     endpaint(hdc);
     setvideomode(0x12);
@@ -72,9 +97,7 @@ int main(int argc, char* argv[])
         setpixel(hdc,x,y);
         redraw(hdc);
         sleep(1);
-
     }
-
 
     squareSize = 200;
     penindex = 0;
@@ -82,7 +105,6 @@ int main(int argc, char* argv[])
         int startX = (640 - squareSize) / 2;
         int startY = (400 - squareSize) / 2;
         selectpen(hdc, 1 +(penindex%13));
-        
 
         moveto(hdc, startX, startY);
         lineto(hdc, startX + squareSize, startY);
@@ -90,14 +112,27 @@ int main(int argc, char* argv[])
         lineto(hdc, startX, startY + squareSize);
         lineto(hdc, startX, startY);
 
-        squareSize -= 2;
+        squareSize -= 3;
         penindex++;
         redraw(hdc);
     }
 
+        for(int i = 0; i <= 640; i+=40){
+        for(int j = 0; j <= 400; j+=40){
+                rect.top = j;
+                rect.left = i;
+                rect.bottom = j + 40;
+                rect.right = i + 40;
+                pen = rand() %16;
+                selectpen(hdc,pen);
+                fillrect(hdc,&rect);
+                redraw(hdc);
+                sleep(1);
+        }
+
+    }
 
     endpaint(hdc);
-    getch();
     setvideomode(0x03);
-
+    exit();
 }

@@ -2,6 +2,7 @@
 #include "defs.h"
 #include "x86.h"
 #include "memlayout.h"
+#include "spinlock.h"
 
 #define MAX_HDC 4
 
@@ -183,14 +184,13 @@ void clear640x400x16(){
     }
 }
 
+// called directly form user programs.
 int sys_setpencolour(void){
     int index;
-    int r;
-    int g;
-    int b;
+    int r,g,b;
 
     if(getcurrentvideomode() == 0x12){
-        cprintf("ERROR: Unsupported video mode!\n");
+        //printf("ERROR: Unsupported video mode!\n");
         return -1;
     }
 
@@ -210,12 +210,16 @@ int sys_setpencolour(void){
         return -1;
     }
 
+    // clamp RGB paramiters to valid values
+    r = validatepenrgb(&r);
+    g = validatepenrgb(&g);
+    b = validatepenrgb(&b);
 
     outb(0x3C8, index);
     outb(0x3C9,r);
     outb(0x3C9,g);
     outb(0x3C9,b);
-    return 1;
+    return 0;
 }
 
 int sys_selectpen(void){

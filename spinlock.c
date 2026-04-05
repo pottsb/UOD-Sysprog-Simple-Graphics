@@ -43,6 +43,7 @@ void acquire(struct spinlock *lk) {
 // Release the lock.
 void release(struct spinlock *lk) {
     if (!holding(lk)) {
+        cprintf("%s\n",lk->name);
         panic("release");
     }
 
