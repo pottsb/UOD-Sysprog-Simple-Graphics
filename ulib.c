@@ -96,3 +96,155 @@ void* memmove(void *vdst, const void *vsrc, int n) {
     }
     return vdst;
 }
+
+// Stuff I added
+// ====================================================================================
+
+struct hdc hdc;
+
+int beginpaint(int hwnd){
+    getHDC(&hdc); 
+    return 0;
+}
+
+int endpaint(int hdcIndex){
+    outputgraphicsbuffertoscreen(hdc.videobuffer);
+    returnHDC();
+    return 0;
+}
+
+int redraw(int hdcIndex){
+    outputgraphicsbuffertoscreen(hdc.videobuffer);
+    return 0;
+}
+
+// all pixel writes to the buffer go through this function
+// this handles the difference in writing to the buffer in the different display modes
+void setpixelinbuffer(int hdcIndex, int x, int y){
+    ushort offset = hdc.screen.x * y + x;
+    if (hdc.videomode == 0x13) {
+        hdc.videobuffer[0][offset] = hdc.pen;
+    } else if (hdc.videomode == 0x12) {
+        //pixel position in the buffer
+        ushort byteoffset = (hdc.screen.x * y + x) / 8;
+        //pixel data position in the byte
+        ushort bitposition = x % 8;
+
+        // set one pixels worth of data accross the four planes at a time
+        for (ushort i = 0; i < 4; i++) {
+            ushort colorbit = (hdc.pen >> i) & 1; // get the current bit for the plane
+            if (colorbit) {
+                hdc.videobuffer[i][byteoffset] |= (1 << (7 - bitposition)); // set the bit to 1
+            } else {
+                hdc.videobuffer[i][byteoffset] &= ~(1 << (7 - bitposition)); // set the bit to 0
+            }
+        }
+    }
+}
+
+// clamp the pixel values to valid positions on the screen
+int validatecoordinate(int *coordinate, int upperlimit){
+    if (*coordinate < 0) {
+        *coordinate = 0;
+    } else if (*coordinate > upperlimit) {
+        *coordinate = upperlimit;
+    }
+    return *coordinate;
+}
+
+int setpixel(int hdcIndex, int x, int y){
+
+    x = validatecoordinate(&x, hdc.screen.x);
+    y = validatecoordinate(&y, hdc.screen.y);
+    
+    setpixelinbuffer(hdcIndex,x,y);
+    return 0;
+}
+
+int moveto(int hdcIndex, int x, int y){
+
+    x = validatecoordinate(&x, hdc.screen.x);
+    y = validatecoordinate(&y, hdc.screen.y);
+
+    hdc.lastpoint.x = x;
+    hdc.lastpoint.y = y;
+
+    return 0;
+}
+
+int abs(int n) {
+    return (n < 0) ? -n : n;
+}
+
+int lineto(int hdcIndex, int x2, int y2){
+
+    x2 = validatecoordinate(&x2, hdc.screen.x);
+    y2 = validatecoordinate(&y2, hdc.screen.y);
+
+    // set the start point to the last saved location.
+    ushort y1 = hdc.lastpoint.y;
+    ushort x1 = hdc.lastpoint.x;
+
+    // Bresenham’s line algorithm
+    ushort dx = abs(x2 - x1);
+    ushort dy = abs(y2 - y1);
+    ushort sx = (x1 < x2) ? 1 : -1;
+    ushort sy = (y1 < y2) ? 1 : -1;
+    short err = dx - dy;
+
+    while (1) {
+        setpixelinbuffer(hdcIndex,x1,y1);
+
+        if (x1 == x2 && y1 == y2) {
+            break;
+        }
+        if (err > -dy) {
+            err -= dy;
+            x1 += sx;
+        }
+        if (err < dx) {
+            err += dx;
+            y1 += sy;
+        }
+    }
+
+    // set the saved location to the end of the line
+    hdc.lastpoint.x = x2;
+    hdc.lastpoint.y = y2;
+
+    return 0;
+}
+
+int fillrect(int hdcIndex, struct rect *rect){
+
+    rect->top = validatecoordinate(&rect->top, hdc.screen.y);
+    rect->bottom = validatecoordinate(&rect->bottom, hdc.screen.y);
+    rect->left = validatecoordinate(&rect->left, hdc.screen.x);
+    rect->right = validatecoordinate(&rect->right, hdc.screen.x);
+ 
+    for (ushort y = rect->top; y <= rect->bottom; y++) {
+            for (ushort x = rect->left; x <= rect->right; x++) {
+                setpixelinbuffer(hdcIndex,x,y);
+            }
+        }
+
+    return 0;
+}
+
+int selectpen(int hdcIndex, int index){
+
+    ushort maxindex = 0;
+    if(hdc.videomode == 0x13){
+        maxindex = 255;
+    }else if(hdc.videomode == 0x12){
+        maxindex = 15;
+    }
+
+    if (index < 0 || index > maxindex) {
+        printf(1,"ERROR: Pen index out of range!\n");
+        return -1;
+    }
+
+    hdc.pen = index;
+    return 0;
+}

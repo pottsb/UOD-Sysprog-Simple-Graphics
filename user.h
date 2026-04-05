@@ -2,12 +2,7 @@ struct stat;
 struct rtcdate;
 struct rect;
 
-struct rect {
-int top; // y co-ordinate of top of rectangle
-int left; // x co-ordinate of left of rectangle
-int bottom; // y co-ordinate of bottom of rectangle
-int right; // x co-ordinate of right of rectangle
-};
+
 
 
 // system calls
@@ -57,15 +52,19 @@ int atoi(const char*);
 int greeting(void);
 int shutdown(int restart);
 
-
-//graphics.c
-void testfunc();
+// ulib.c
 int setpixel(int hdcIndex, int x, int y);
-int moveto(int hdc, int x, int y);
-int lineto(int hdc, int x, int y);
+int moveto(int hdcIndex, int x, int y);
+int lineto(int hdcIndex, int x, int y);
 int setpencolour(int index, int r, int g, int b);
-int selectpen(int hdc, int index);
-int fillrect(int hdc, struct rect*);
+int selectpen(int hdcIndex, int index);
+int fillrect(int hdcIndex, struct rect*);
 int beginpaint(int hwnd);
 int endpaint(int hdc);
 int redraw(int hdc);
+
+//graphics.c
+int setpencolour(int index, int r, int g, int b);
+int outputgraphicsbuffertoscreen(char (*videobuffer)[320 * 200]);
+void returnHDC(void);
+int getHDC(struct hdc*);

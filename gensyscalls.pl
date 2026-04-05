@@ -38,17 +38,12 @@ my @syscalls = (
                 "getch",
 				"greeting",
 				"shutdown",
-				"setvideomode",
-				"setpixel",
-				"moveto",
-				"lineto",
-				"selectpen",
+				"outputgraphicsbuffertoscreen",
 				"setpencolour",
-				"fillrect",
-				"beginpaint",
+				"setvideomode",
+				"getHDC",
+				"returnHDC"
 
-				"endpaint",
-				"redraw"
 			   );
 
 my $i;			   
@@ -88,7 +83,8 @@ for ($i = 0; $i < scalar(@syscalls); $i++)
 }
 if ($ARGV[0] eq '-a')
 {
-	print "#include \"syscall.h\"\n";
+	# Use ./ so we never pick up /usr/include/syscall.h when the local file is missing.
+	print "#include \"./syscall.h\"\n";
 	print "#include \"traps.h\"\n";
 	print "\n";
 	print "#define SYSCALL(name) \\\n";
