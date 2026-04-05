@@ -9,13 +9,18 @@ I achieved an overall grade of 87% for the module.
 
 ## Requirements
 make
+<br/>
 qemu
 
 ## Running
+```sh
 make qemu
+```
 
 ### Inside the VM
+```sh
 demo
 fork
+```
 <br/>
 Project Demo: https://youtu.be/RJbGHK947_0
