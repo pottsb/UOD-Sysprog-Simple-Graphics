@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./example.PNG" alt="Grafana Dashboard example" />
+  <img src="./example.png" alt="Grafana Dashboard example" />
 </p>
 
 ## About
