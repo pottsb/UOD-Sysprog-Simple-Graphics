@@ -38,12 +38,17 @@ my @syscalls = (
                 "getch",
 				"greeting",
 				"shutdown",
-				"outputgraphicsbuffertoscreen",
-				"setpencolour",
 				"setvideomode",
-				"getHDC",
-				"returnHDC"
+				"setpixel",
+				"moveto",
+				"lineto",
+				"selectpen",
+				"setpencolour",
+				"fillrect",
+				"beginpaint",
 
+				"endpaint",
+				"redraw"
 			   );
 
 my $i;			   

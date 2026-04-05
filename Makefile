@@ -202,14 +202,6 @@ UPROGS=\
 	_shutdown\
 	_test\
 	_demo\
-	_fork\
-	_exectest\
-	_exectest_p1\
-
-
-#	_stressfs\
-	_usertests\
-	_cat\
 
 fs.img: mkfs $(UPROGS)
 	if test -x ./mkfs; then ./mkfs fs.img $(UPROGS); else /lib64/ld-linux-x86-64.so.2 ./mkfs fs.img $(UPROGS); fi
