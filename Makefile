@@ -78,7 +78,7 @@ AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
-CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
+CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -mno-sse -mno-sse2 -mfpmath=387 -Werror -fno-omit-frame-pointer -Wno-array-bounds -Wno-infinite-recursion
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
@@ -112,16 +112,20 @@ bootblock: bootasm.S bootmain.c
 	# copy folders on wsl, sometimees the execute permissions can be removed from perl scripts.
 	# Uncomment if needed, but it will flag as a change for git.
 	# chmod +x sign.pl
-	./sign.pl bootblock
+	perl sign.pl bootblock
+	@test "$$(wc -c < bootblock)" -eq 512 || (echo "*** bootblock must be 512 bytes after sign.pl (got $$(wc -c < bootblock) bytes)" 1>&2; exit 1)
 
 syscall.h: gensyscalls.pl
-	./gensyscalls.pl -h > syscall.h	
+	perl gensyscalls.pl -h > syscall.h	
 
 syscalltable.h: gensyscalls.pl
-	./gensyscalls.pl -c > syscalltable.h
+	perl gensyscalls.pl -c > syscalltable.h
 
 usys.S: gensyscalls.pl
-	./gensyscalls.pl -a > usys.S
+	perl gensyscalls.pl -a > usys.S
+
+# Without local syscall.h (e.g. after clean), gcc uses /usr/include/syscall.h and linking fails.
+usys.o: syscall.h
 
 entryother: entryother.S
 	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c entryother.S
@@ -129,7 +133,7 @@ entryother: entryother.S
 	$(OBJCOPY) -S -O binary -j .text bootblockother.o entryother
 	$(OBJDUMP) -S bootblockother.o > entryother.asm
 
-initcode: initcode.S
+initcode: initcode.S syscall.h
 	$(CC) $(CFLAGS) -nostdinc -I. -c initcode.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o initcode.out initcode.o
 	$(OBJCOPY) -S -O binary initcode.out initcode
@@ -157,7 +161,7 @@ tags: $(OBJS) entryother.S _init
 
 vectors.S: vectors.pl
 	# chmod +x vectors.pl
-	./vectors.pl > vectors.S
+	perl vectors.pl > vectors.S
 
 ULIB = ulib.o usys.o printf.o umalloc.o
 
@@ -208,7 +212,7 @@ UPROGS=\
 	_cat\
 
 fs.img: mkfs $(UPROGS)
-	./mkfs fs.img $(UPROGS)
+	if test -x ./mkfs; then ./mkfs fs.img $(UPROGS); else /lib64/ld-linux-x86-64.so.2 ./mkfs fs.img $(UPROGS); fi
 
 -include *.d
 
@@ -231,13 +235,20 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 ifndef CPUS
 CPUS := 2
 endif
+# Arch/CachyOS split package qemu-system-x86 is headless-only until you install qemu-desktop
+# (adds gtk/sdl). We only pass -display gtk/sdl if `qemu -display help` lists that backend.
+ifndef QEMUDISPLAY
+QEMUDISPLAY := $(shell $(QEMU) -display help 2>/dev/null | awk '/^gtk$$/{print "-display gtk"; exit} /^sdl$$/{print "-display sdl"; exit}')
+endif
+# Force: make qemu QEMUDISPLAY='-display gtk'
+# No window / no VNC: make qemu-nox
 QEMUOPTS = -drive file=fs.img,index=1,media=disk,format=raw -drive file=xv6.img,index=0,media=disk,format=raw -smp $(CPUS) -m 512 $(QEMUEXTRA)
 
 qemu: fs.img xv6.img
-	$(QEMU) -vga std -serial mon:stdio $(QEMUOPTS)
+	$(QEMU) $(QEMUDISPLAY) -vga std -serial mon:stdio $(QEMUOPTS)
 
 qemu-memfs: xv6memfs.img
-	$(QEMU) -vga std -drive file=xv6memfs.img,index=0,media=disk,format=raw -smp $(CPUS) -m 256
+	$(QEMU) $(QEMUDISPLAY) -vga std -drive file=xv6memfs.img,index=0,media=disk,format=raw -smp $(CPUS) -m 256
 
 qemu-nox: fs.img xv6.img
 	$(QEMU) -nographic $(QEMUOPTS)
@@ -250,7 +261,7 @@ qemu-curses: fs.img xv6.img
 
 qemu-gdb: fs.img xv6.img .gdbinit
 	@echo "*** Now run 'gdb'." 1>&2
-	$(QEMU) -vga std -serial mon:stdio $(QEMUOPTS) -S $(QEMUGDB)
+	$(QEMU) $(QEMUDISPLAY) -vga std -serial mon:stdio $(QEMUOPTS) -S $(QEMUGDB)
 
 qemu-nox-gdb: fs.img xv6.img .gdbinit
 	@echo "*** Now run 'gdb'." 1>&2

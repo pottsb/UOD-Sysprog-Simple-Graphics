@@ -39,7 +39,10 @@ seta20.2:
     # Switch from real to protected mode.  Use a bootstrap GDT that makes
     # virtual addresses map directly to physical addresses so that the
     # effective memory map doesn't change during the transition.
-    lgdt    gdtdesc
+    # Point %si at gdtdesc (DS=0) and use data32 lgdt (%si) so recent GNU as
+    # does not misassemble bare `lgdt gdtdesc' as lgdt (%esi) with garbage %esi.
+    movw    $gdtdesc, %si
+    data32  lgdt    (%si)
     movl    %cr0, %eax
     orl     $CR0_PE, %eax
     movl    %eax, %cr0
